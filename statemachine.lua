@@ -11,7 +11,7 @@ function SimpleStateMachine:get_state()
 	return self.currentState
 end
 
-function SimpleStateMachine:set_state(name)
+function SimpleStateMachine:set_state(name)	
 	if name == self.currentState then
 		return
 	end
@@ -19,8 +19,8 @@ function SimpleStateMachine:set_state(name)
 		if self.states[self.currentState].onExit and type(self.states[self.currentState].onExit) == "function" then
 			self.states[self.currentState].onExit()
 		end		
-	end		
-	if self.states[self.currentState] then
+	end			
+	if self.states[name] then		
 		self.currentState = name
 		if self.states[self.currentState] and type(self.states[self.currentState].onEnter) == "function" then
 			self.states[self.currentState].onEnter()
@@ -36,6 +36,6 @@ function SimpleStateMachine:tick()
 	end
 end
 
-function SimpleStateMachine:register(name, onEnter, onTick, onExit)
-	self.states[name] = { onEnter = onEnter, onTick = onTick, onExit = onExit }
+function SimpleStateMachine:register(name, onEnter, onTick, onExit)	
+	self.states[name] = { onEnter = onEnter, onTick = onTick, onExit = onExit }	
 end
