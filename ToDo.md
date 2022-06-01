@@ -1,0 +1,14 @@
+- [x] rewrite as class
+- [x] test all goals
+- [x] implement a goal only requiring to collect the required location count
+  - [x] test
+- [ ] test with all chars (esp. Tainted Chars)
+- [x] fix restock override
+  - [ ] breaks with breakfast.....
+- [ ] datapackage version caching
+- [x] look into RNG, we seem to get the same cards/pill when we spawn stuff quickly
+- [ ] prevent spawning items on top of ... (esp. when run start with many items)
+  - [x] other items
+  - [ ] player `-> seems to not work as the player is moving during start (from center pos to actual start pos)`
+- [ ] fix collect behavoir
+  - [ ] collect seems to crash sometimes?
