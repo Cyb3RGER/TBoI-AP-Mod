@@ -22,125 +22,125 @@ AP.STATE_CONNECTED = "connected"
 AP.STATE_EXIT = "exit"
 
 AP.ITEM_IMPLS = {
-    [78000] = function()
-        spawnRandomCollectibleFromPool(ItemPoolType.POOL_TREASURE)
+    [78000] = function(ap)
+        ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_TREASURE)
     end,
-    [78001] = function()
-        spawnRandomCollectibleFromPool(ItemPoolType.POOL_SHOP)
+    [78001] = function(ap)
+        ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_SHOP)
     end,
-    [78002] = function()
-        spawnRandomCollectibleFromPool(ItemPoolType.POOL_BOSS)
+    [78002] = function(ap)
+        ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_BOSS)
     end,
-    [78003] = function()
-        spawnRandomCollectibleFromPool(ItemPoolType.POOL_DEVIL)
+    [78003] = function(ap)
+        ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_DEVIL)
     end,
-    [78004] = function()
-        spawnRandomCollectibleFromPool(ItemPoolType.POOL_ANGEL)
+    [78004] = function(ap)
+        ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_ANGEL)
     end,
-    [78005] = function()
-        spawnRandomCollectibleFromPool(ItemPoolType.POOL_SECRET)
+    [78005] = function(ap)
+        ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_SECRET)
     end,
-    [78006] = function()
-        spawnRandomCollectibleFromPool(ItemPoolType.POOL_LIBRARY)
+    [78006] = function(ap)
+        ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_LIBRARY)
     end,
-    [78007] = function()
-        spawnRandomCollectibleFromPool(ItemPoolType.POOL_CURSE)
+    [78007] = function(ap)
+        ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_CURSE)
     end,
-    [78008] = function()
-        spawnRandomCollectibleFromPool(ItemPoolType.POOL_PLANETARIUM)
+    [78008] = function(ap)
+        ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_PLANETARIUM)
     end,
-    [78009] = function()
-        spawnRandomCollectibleFromPool(ItemPoolType.POOL_SHELL_GAME)
+    [78009] = function(ap)
+        ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_SHELL_GAME)
     end,
-    [78010] = function()
-        spawnRandomCollectibleFromPool(ItemPoolType.POOL_GOLDEN_CHEST)
+    [78010] = function(ap)
+        ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_GOLDEN_CHEST)
     end,
-    [78011] = function()
-        spawnRandomCollectibleFromPool(ItemPoolType.POOL_RED_CHEST)
+    [78011] = function(ap)
+        ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_RED_CHEST)
     end,
-    [78012] = function()
-        spawnRandomCollectibleFromPool(ItemPoolType.POOL_BEGGAR)
+    [78012] = function(ap)
+        ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_BEGGAR)
     end,
-    [78013] = function()
-        spawnRandomCollectibleFromPool(ItemPoolType.POOL_DEMON_BEGGAR)
+    [78013] = function(ap)
+        ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_DEMON_BEGGAR)
     end,
-    [78014] = function()
-        spawnRandomCollectibleFromPool(ItemPoolType.POOL_KEY_MASTER)
+    [78014] = function(ap)
+        ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_KEY_MASTER)
     end,
-    [78015] = function()
-        spawnRandomCollectibleFromPool(ItemPoolType.POOL_BATTERY_BUM)
+    [78015] = function(ap)
+        ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_BATTERY_BUM)
     end,
-    [78016] = function()
-        spawnRandomCollectibleFromPool(ItemPoolType.POOL_MOMS_CHEST)
+    [78016] = function(ap)
+        ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_MOMS_CHEST)
     end,
-    [78017] = function()
-        spawnRandomCollectibleFromPool(ItemPoolType.POOL_GREED_TREASURE)
+    [78017] = function(ap)
+        ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_GREED_TREASURE)
     end,
-    [78018] = function()
-        spawnRandomCollectibleFromPool(ItemPoolType.POOL_GREED_BOSS)
+    [78018] = function(ap)
+        ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_GREED_BOSS)
     end,
-    [78019] = function()
-        spawnRandomCollectibleFromPool(ItemPoolType.POOL_GREED_SHOP)
+    [78019] = function(ap)
+        ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_GREED_SHOP)
     end,
-    [78020] = function()
-        spawnRandomCollectibleFromPool(ItemPoolType.POOL_GREED_DEVIL)
+    [78020] = function(ap)
+        ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_GREED_DEVIL)
     end,
-    [78021] = function()
-        spawnRandomCollectibleFromPool(ItemPoolType.POOL_GREED_ANGEL)
+    [78021] = function(ap)
+        ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_GREED_ANGEL)
     end,
-    [78022] = function()
-        spawnRandomCollectibleFromPool(ItemPoolType.POOL_GREED_CURSE)
+    [78022] = function(ap)
+        ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_GREED_CURSE)
     end,
-    [78023] = function()
-        spawnRandomCollectibleFromPool(ItemPoolType.POOL_GREED_SECRET)
+    [78023] = function(ap)
+        ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_GREED_SECRET)
     end,
-    [78024] = function()
-        spawnRandomCollectibleFromPool(ItemPoolType.POOL_CRANE_GAME)
+    [78024] = function(ap)
+        ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_CRANE_GAME)
     end,
-    [78025] = function()
-        spawnRandomCollectibleFromPool(ItemPoolType.POOL_ULTRA_SECRET)
+    [78025] = function(ap)
+        ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_ULTRA_SECRET)
     end,
-    [78026] = function()
-        spawnRandomCollectibleFromPool(ItemPoolType.POOL_BOMB_BUM)
+    [78026] = function(ap)
+        ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_BOMB_BUM)
     end,
-    [78027] = function()
-        spawnRandomCollectibleFromPool(ItemPoolType.POOL_OLD_CHEST)
+    [78027] = function(ap)
+        ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_OLD_CHEST)
     end,
-    [78028] = function()
-        spawnRandomCollectibleFromPool(ItemPoolType.POOL_BABY_SHOP)
+    [78028] = function(ap)
+        ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_BABY_SHOP)
     end,
-    [78029] = function()
-        spawnRandomCollectibleFromPool(ItemPoolType.POOL_WOODEN_CHEST)
+    [78029] = function(ap)
+        ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_WOODEN_CHEST)
     end,
-    [78030] = function()
-        spawnRandomCollectibleFromPool(ItemPoolType.POOL_ROTTEN_BEGGAR)
+    [78030] = function(ap)
+        ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_ROTTEN_BEGGAR)
     end,
-    [78031] = function()
-        spawnRandomPickup()
+    [78031] = function(ap)
+        ap:spawnRandomPickup()
     end,
-    [78032] = function()
-        spawnRandomPickupByType(PickupVariant.PICKUP_HEART)
+    [78032] = function(ap)
+        ap:spawnRandomPickupByType(PickupVariant.PICKUP_HEART)
     end,
-    [78033] = function()
-        spawnRandomPickupByType(PickupVariant.PICKUP_COIN)
+    [78033] = function(ap)
+        ap:spawnRandomPickupByType(PickupVariant.PICKUP_COIN)
     end,
-    [78034] = function()
-        spawnRandomPickupByType(PickupVariant.PICKUP_BOMB)
+    [78034] = function(ap)
+        ap:spawnRandomPickupByType(PickupVariant.PICKUP_BOMB)
     end,
-    [78035] = function()
-        spawnRandomPickupByType(PickupVariant.PICKUP_KEY)
+    [78035] = function(ap)
+        ap:spawnRandomPickupByType(PickupVariant.PICKUP_KEY)
     end,
-    [78036] = function()
-        spawnRandomPickupByType(PickupVariant.PICKUP_TAROTCARD)
+    [78036] = function(ap)
+        ap:spawnRandomPickupByType(PickupVariant.PICKUP_TAROTCARD)
     end,
-    [78037] = function()
-        spawnRandomPickupByType(PickupVariant.PICKUP_PILL)
+    [78037] = function(ap)
+        ap:spawnRandomPickupByType(PickupVariant.PICKUP_PILL)
     end,
-    [78038] = function()
-        spawnRandomChest()
+    [78038] = function(ap)
+        ap:spawnRandomChest()
     end,
-    [78039] = function()
-        spawnRandomPickupByType(PickupVariant.PICKUP_TRINKET)
+    [78039] = function(ap)
+        ap:spawnRandomPickupByType(PickupVariant.PICKUP_TRINKET)
     end
 }
 
@@ -240,15 +240,18 @@ function AP:init(host_address, host_port, slot_name, password)
             end
             mod:SaveData(json.encode({
                 SAVED_ITEM_INDEX = self.LAST_RECEIVED_ITEM_INDEX,
-                SAVED_SEED = seed
+                SAVED_SEED = seed,
+                PRICE_TABLE = self.PRICE_TABLE,
+                REROLL_COUNTS = self.REROLL_COUNTS,
+                HAD_STEAM_SALE = self.HAD_STEAM_SALE
             }))
         end
         self:shutdown()
     end
     function self.onPrePickupCollision(mod, pickup, collider, low)
         local totalLocations = self.CONNECTION_INFO.slot_data["totalLocations"]
-        local checkedLocations = #self.CHECKED_LOCATIONS
-        local hash = GetPtrHash(pickup)
+        local checkedLocations = #self.CHECKED_LOCATIONS        
+        local collectableIndex = getCollectableIndex(pickup)
         if pickup.Variant ~= PickupVariant.PICKUP_COLLECTIBLE or collider.Type ~= EntityType.ENTITY_PLAYER or
             checkedLocations >= totalLocations -- used to not make AP spawned item collectable until rerolled
         or pickup.Touched -- check for special items: polaroid/negative or key/knife pieces or dad's note
@@ -261,7 +264,7 @@ function AP:init(host_address, host_port, slot_name, password)
             return
         end
         -- check timer
-        if self.PICKUP_TIMER[hash] and self.PICKUP_TIMER[hash] > 0 then
+        if self.PICKUP_TIMER[collectableIndex] and self.PICKUP_TIMER[collectableIndex] > 0 then
             return false
         end
         local player = collider:ToPlayer()
@@ -336,18 +339,19 @@ function AP:init(host_address, host_port, slot_name, password)
             if pickup:IsShopItem() and hasRestock and pickup.Price > 0 then
                 local seed = Game():GetSeeds():GetStartSeed()
                 local pool = Game():GetItemPool():GetPoolForRoom(room:GetType(), seed)
-                local item = Game():GetItemPool():GetCollectible(pool, true)
-                pickup:Morph(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, item, true)
-                if not self.REROLL_COUNTS[hash] then
-                    self.REROLL_COUNTS[hash] = 0
+                local item = Game():GetItemPool():GetCollectible(pool, true)                
+                pickup:Morph(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, item, true, true)
+                if not self.REROLL_COUNTS[collectableIndex] then
+                    self.REROLL_COUNTS[collectableIndex] = 0
                 end
                 pickup.AutoUpdatePrice = false
-                pickup.Price = pickup.Price + 2 + (2 * self.REROLL_COUNTS[hash])
+                pickup.Price = pickup.Price + 2 + (2 * self.REROLL_COUNTS[collectableIndex])
                 if pickup.Price > 99 then
                     pickup.Price = 99
-                end
-                self.REROLL_COUNTS[hash] = self.REROLL_COUNTS[hash] + 1
-                self.PICKUP_TIMER[hash] = 200
+                end                
+                self.REROLL_COUNTS[collectableIndex] = self.REROLL_COUNTS[collectableIndex] + 1
+                self.PICKUP_TIMER[collectableIndex] = 150                
+                self.PRICE_TABLE[collectableIndex] = pickup.Price
             else
                 pickup:Remove()
             end
@@ -383,7 +387,7 @@ function AP:init(host_address, host_port, slot_name, password)
         -- blue baby uses a SubType of Isaac => requries special handling
         if type == EntityType.ENTITY_ISAAC then
             if (goal == 2 or goal == 3) and entity.Variant == 0 then
-                self:sendGoalReached()                
+                self:sendGoalReached()
             elseif (goal == 5 or goal == 6) and entity.Variant == 1 then
                 self:sendGoalReached()
             end
@@ -408,24 +412,53 @@ function AP:init(host_address, host_port, slot_name, password)
             -- Dogma uses Variant == 2 for the 2nd phase
         elseif type == EntityType.ENTITY_DOGMA then
             if entity.Variant == 2 then
-                self:sendGoalReached()                
+                self:sendGoalReached()
             end
             return
             -- Variant 0 is the final kill
         elseif type == EntityType.ENTITY_BEAST then
             if entity.Variant == 0 then
-                self:sendGoalReached()                
+                self:sendGoalReached()
             end
             return
             -- Mother uses Variant == 10 for the 2nd phase
-        elseif type == EntityType.ENTITY_MOTHER  then
-            if  entity.Variant == 10 then
-                self:sendGoalReached()                
+        elseif type == EntityType.ENTITY_MOTHER then
+            if entity.Variant == 10 then
+                self:sendGoalReached()
             end
             return
         else
             self:sendGoalReached()
             return
+        end
+    end
+    function self.onPostPickupUpdate(mod, pickup)
+        -- blame isaac devs for this
+        if not pickup:IsShopItem() then
+            return
+        end
+        if not self.HAD_STEAM_SALE then
+            local hasSteamSale = false
+            local playerNum = Game():GetNumPlayers()
+            for i = 0, playerNum - 1 do
+                local player = Game():GetPlayer(i)
+                if player:HasCollectible(CollectibleType.COLLECTIBLE_STEAM_SALE) then
+                    hasSteamSale = true
+                    break
+                end
+            end
+            if hasSteamSale then
+                self.HAD_STEAM_SALE = true
+                for k,v in pairs(self.PRICE_TABLE) do
+                    self.PRICE_TABLE[k] = math.round(v / 2)
+                end
+            end
+        end
+        local collectableIndex = getCollectableIndex(pickup)
+        print("onPostPickupUpdate", 1, collectableIndex, pickup.Price)
+        if self.PRICE_TABLE[collectableIndex] then
+            pickup.AutoUpdatePrice = false
+            pickup.Price = self.PRICE_TABLE[collectableIndex]
         end
     end
     self.MOD_REF:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, self.onPostGameStarted)
@@ -434,6 +467,7 @@ function AP:init(host_address, host_port, slot_name, password)
     self.MOD_REF:AddCallback(ModCallbacks.MC_PRE_PICKUP_COLLISION, self.onPrePickupCollision)
     self.MOD_REF:AddCallback(ModCallbacks.MC_POST_ENTITY_KILL, self.onPostEntityKill)
     self.MOD_REF:AddCallback(ModCallbacks.MC_PRE_SPAWN_CLEAN_AWARD, self.onPreSpawnClearAward)
+    self.MOD_REF:AddCallback(ModCallbacks.MC_POST_PICKUP_UPDATE, self.onPostPickupUpdate)
     print("called AP:init", 3, self.MOD_REF)
     -- global Isaac info
     self.IS_CONTINUED = false
@@ -480,6 +514,8 @@ function AP:init(host_address, host_port, slot_name, password)
     -- -- restock fix related
     self.REROLL_COUNTS = {}
     self.PICKUP_TIMER = {}
+    self.PRICE_TABLE = {}
+    self.HAD_STEAM_SALE = false    
     -- global AP info
     self.LAST_RECEIVED_ITEM_INDEX = -1
     self.CUR_ITEM_STEP_VAL = 0
@@ -556,10 +592,54 @@ function AP:collectItem(item)
         print("!!! received unknown item id  !!!", id)
         return
     end
-    item_impl()
+    item_impl(self)
     if not name then
         name = "Unknown (" .. id .. ")"
     end
+end
+function AP:spawnCollectible(item)
+    local player = Game():GetNearestPlayer(Isaac.GetRandomPosition())
+    local item_config = Isaac:GetItemConfig():GetCollectible(item)
+    if item_config.Type ~= ItemType.ITEM_ACTIVE or player:GetActiveItem(ActiveSlot.SLOT_PRIMARY) == 0 then
+        player:QueueItem(item_config) -- FixMe: transformations cause graphical glitches sometimes
+    else
+        local room = Game():GetRoom()
+        local num = 1
+        local startPos = room:GetClampedPosition(Vector(player.Position.X, player.Position.Y - 1), 0)
+        local pos = room:FindFreePickupSpawnPosition(startPos, num, true, false)
+        while not checkPos(pos, player) do
+            num = num + 1
+            pos = room:FindFreePickupSpawnPosition(startPos, num, true, false)
+        end
+        local entity = Isaac.Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, item, pos, Vector(0, 0),
+            nil)
+        -- used to not make AP spawned item collectable until rerolled
+        entity:ToPickup().Touched = true        
+    end
+end
+function AP:spawnRandomCollectibleFromPool(pool)
+    local item = Game():GetItemPool():GetCollectible(pool, true)
+    self:spawnCollectible(item)
+end
+function AP:spawnRandomPickup()
+    self:spawnRandomPickupByType(PICKUP_TYPES[math.random(#PICKUP_TYPES)])
+end
+function AP:spawnRandomChest()
+    self:spawnRandomPickupByType(CHEST_TYPES[math.random(#CHEST_TYPES)])
+end
+function AP:spawnRandomPickupByType(type, subtype)
+    if not subtype then
+        subtype = 0
+    end
+    local player = Game():GetNearestPlayer(Isaac.GetRandomPosition())
+    local room = Game():GetRoom()
+    local num = 1
+    local pos = room:FindFreePickupSpawnPosition(player.Position, num, true, false)
+    while not checkPos(pos, player) do
+        num = num + 1
+        pos = room:FindFreePickupSpawnPosition(player.Position, num, true, false)
+    end
+    Isaac.Spawn(EntityType.ENTITY_PICKUP, type, subtype, pos, Vector(0, 0), nil)
 end
 -- END AP util funcs
 
@@ -576,7 +656,7 @@ function AP:processBlock(data)
         print('processing block', cmd)
         if cmd == "ReceivedItems" then
             if block.index > self.LAST_RECEIVED_ITEM_INDEX then
-                LAST_RECEIVED_ITEM_INDEX = block.index
+                self.LAST_RECEIVED_ITEM_INDEX = block.index
                 for _, item in ipairs(block.items) do
                     self:collectItem(item)
                 end
@@ -594,7 +674,7 @@ function AP:processBlock(data)
             end
             print("Connection refused by AP Server." .. errsMsgs)
             self:addMessage({
-                parts ={{
+                parts = {{
                     msg = "Connection refused by AP Server." .. errsMsgs,
                     color = COLORS.RED
                 }}
@@ -698,7 +778,12 @@ function AP:processBlock(data)
                     local modData = json.decode(self.MOD_REF:LoadData())
                     if modData and modData.SAVED_SEED and modData.SAVED_ITEM_INDEX and
                         self.CONNECTION_INFO.slot_data["seed"] == modData.SAVED_SEED then
-                        self.LAST_RECEIVED_ITEM_INDEX = modData.SAVED_ITEM_INDEX
+                        self.LAST_RECEIVED_ITEM_INDEX = modData.SAVED_ITEM_INDEX                        
+                        if modData.REROLL_COUNTS and modData.PRICE_TABLE and modData.HAD_STEAM_SALE then
+                            self.REROLL_COUNTS = modData.REROLL_COUNTS
+                            self.PRICE_TABLE = modData.PRICE_TABLE
+                            self.HAD_STEAM_SALE = modData.HAD_STEAM_SALE
+                        end
                     else
                         self:shutdown()
                         self:addMessage({
@@ -939,10 +1024,11 @@ function AP:showPermanentMessage()
         Isaac.RenderScaledText(text, 25, 210, 1, 1, 255, 0, 0, 1)
     elseif state == AP.STATE_CONNECTED then
         Isaac.RenderScaledText(text, 25, 210, 1, 1, 0, 255, 0, 1)
-        if self.CONNECTION_INFO then            
+        if self.CONNECTION_INFO then
             local text2 = string.format("%s/%s checked (need %s); next check: %s/%s; goal: %s", #self.CHECKED_LOCATIONS,
-            self.CONNECTION_INFO.slot_data.totalLocations, self.CONNECTION_INFO.slot_data.requiredLocations,
-            self.CUR_ITEM_STEP_VAL, self.CONNECTION_INFO.slot_data.itemPickupStep, self:goalIdToName(self.CONNECTION_INFO.slot_data.goal))
+                self.CONNECTION_INFO.slot_data.totalLocations, self.CONNECTION_INFO.slot_data.requiredLocations,
+                self.CUR_ITEM_STEP_VAL, self.CONNECTION_INFO.slot_data.itemPickupStep,
+                self:goalIdToName(self.CONNECTION_INFO.slot_data.goal))
             Isaac.RenderScaledText(text2, 25, 220, 1, 1, 255, 255, 255, 1)
         end
     else

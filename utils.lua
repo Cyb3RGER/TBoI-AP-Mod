@@ -62,51 +62,6 @@ for _, v in ipairs(CHEST_TYPES) do
     table.insert(PICKUP_TYPES, v)
 end
 
-function spawnRandomPickup()
-    spawnRandomPickupByType(PICKUP_TYPES[math.random(#PICKUP_TYPES)])
-end
-
-function spawnRandomChest()
-    spawnRandomPickupByType(CHEST_TYPES[math.random(#CHEST_TYPES)])
-end
-
-function spawnRandomPickupByType(type, subtype)
-    if not subtype then
-        subtype = 0
-    end
-    local player = Game():GetNearestPlayer(Isaac.GetRandomPosition())
-    local room = Game():GetRoom()
-    local num = 1
-    local pos = room:FindFreePickupSpawnPosition(player.Position, num, true, false)
-    while not checkPos(pos, player) do
-        num = num + 1
-        pos = room:FindFreePickupSpawnPosition(player.Position, num, true, false)       
-    end
-    Game():Spawn(EntityType.ENTITY_PICKUP, type, pos, Vector(0, 0), nil, subtype, Random())
-end
-
-function spawnRandomCollectibleFromPool(pool)
-    local player = Game():GetNearestPlayer(Isaac.GetRandomPosition())
-    local item = Game():GetItemPool():GetCollectible(pool, true)
-    local item_config = Isaac:GetItemConfig():GetCollectible(item)
-    if item_config.Type ~= ItemType.ITEM_ACTIVE or player:GetActiveItem(ActiveSlot.SLOT_PRIMARY) == 0 then
-        player:QueueItem(item_config) -- FixMe: transformations cause graphical glitches sometimes
-    else
-        local room = Game():GetRoom()
-        local num = 1
-        local startPos = room:GetClampedPosition(Vector(player.Position.X, player.Position.Y - 1), 0)
-        local pos = room:FindFreePickupSpawnPosition(startPos, num, true, false)        
-        while not checkPos(pos, player) do
-            num = num + 1
-            pos = room:FindFreePickupSpawnPosition(startPos, num, true, false)       
-        end
-        local entity = Game():Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, pos, Vector(0, 0), nil,
-            item, Random())
-        -- used to not make AP spawned item collectable until rerolled
-        entity:ToPickup().Touched = true
-    end
-end
-
 function checkPos(pos, player)   
     local room = Game():GetRoom() 
     local playerPos = room:GetGridPosition(room:GetGridIndex(player.Position))
@@ -129,6 +84,17 @@ function checkPos(pos, player)
         end
     end
     return true
+end
+
+function getCollectableIndex(collectable)    
+    local level = Game():GetLevel()
+    local room = Game():GetRoom()
+    local roomDescriptor = level:GetCurrentRoomDesc()
+    local roomListIndex = roomDescriptor.ListIndex
+    local gridIndex = room:GetGridIndex(collectable.Position)
+    local subType = collectable.SubType
+    local initSeed = collectable.InitSeed
+    return "("..roomListIndex.."|"..gridIndex.."|"..initSeed..")"
 end
 
 -- from https://stackoverflow.com/questions/9168058/how-to-dump-a-table-to-console
@@ -169,4 +135,8 @@ function findIndex(list, value)
         end
     end
     return nil
+end
+
+function math.round(num, decimalPlaces)
+    return tonumber(string.format("%." .. (decimalPlaces or 0) .. "f", num))
 end

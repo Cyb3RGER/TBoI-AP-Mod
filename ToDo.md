@@ -4,7 +4,8 @@
   - [x] test
 - [ ] test with all chars (esp. Tainted Chars)
 - [x] fix restock override
-  - [ ] breaks with breakfast.....
+  - [x] breaks with binge eater.....
+    - [x] steam sale doesn't work now prolly.......
 - [ ] datapackage version caching
 - [x] look into RNG, we seem to get the same cards/pill when we spawn stuff quickly
 - [ ] prevent spawning items on top of ... (esp. when run start with many items)
