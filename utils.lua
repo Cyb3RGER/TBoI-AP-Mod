@@ -68,17 +68,17 @@ function checkPos(pos, player)
     local clampedPos = room:GetGridPosition(room:GetGridIndex(pos))
     local collision = room:GetGridCollisionAtPos(pos)
     local girdEntity = room:GetGridEntityFromPos(pos)
-    print("checkPos", 1,  playerPos.X, clampedPos.X, playerPos.Y, clampedPos.Y, collision, girdEntity)
+    --print("checkPos", 1,  playerPos.X, clampedPos.X, playerPos.Y, clampedPos.Y, collision, girdEntity)
     if (playerPos.X == clampedPos.X and playerPos.Y == clampedPos.Y) or collision ~= GridCollisionClass.COLLISION_NONE or girdEntity ~= nil then
         return false
     end
-    print("checkPos", 2)
+    --print("checkPos", 2)
     local entities = Isaac.GetRoomEntities()
     for _, v in pairs(entities) do
         if v.Type == EntityType.ENTITY_PICKUP then
             local clampedEntityPos = room:GetGridPosition(room:GetGridIndex(v.Position))
             if clampedEntityPos.X == clampedPos.X and clampedEntityPos.Y == clampedPos.Y then
-                print("checkPos", 3)
+                --print("checkPos", 3)
                 return false
             end
         end
@@ -139,4 +139,55 @@ end
 
 function math.round(num, decimalPlaces)
     return tonumber(string.format("%." .. (decimalPlaces or 0) .. "f", num))
+end
+
+function getKeysSortedByValue(tbl, sortFunction)
+    local keys = {}
+    for key in pairs(tbl) do
+        table.insert(keys, key)
+    end
+    table.sort(keys, function(a, b)
+        return sortFunction(tbl[a], tbl[b])
+    end)    
+    return keys
+end
+
+-- used to dump collectables for AP item list
+function dump_collectables(id_offset)
+    local temp = CollectibleType
+    -- remove unneeded keys
+    temp.COLLECTIBLE_NULL = nil
+    temp.NUM_COLLECTIBLES = nil
+    -- sort
+    local sortedKeys = getKeysSortedByValue(temp, function(a, b)
+        return a < b
+    end)    
+    -- output
+    local ids = {}
+    require('io')
+    local file = io.open("collectables.txt", "w+")
+    for _, k in pairs(sortedKeys) do
+        local id = temp[k] + id_offset - 1
+        local name = string.sub(k, 13)
+        name = string.lower(name)
+        name = string.gsub(name, "_", " ")
+        name = string.upper(string.sub(name, 1, 1)) .. string.sub(name, 2)
+        local i = 0
+        while true do
+            i = string.find(name, " ", i + 1)
+            if i == nil then
+                break
+            end
+            name = string.sub(name, 1, i) .. string.upper(string.sub(name, i + 1, i + 1)) .. string.sub(name, i + 2)
+        end
+        if contains(ids, id) then
+            file:write(string.format("# %s need alias %s\n", id, name))
+            print('add alias notice', name, id)
+        else
+            file:write(string.format("\"%s\": %s,\n", name, id))
+            print(name, id)
+            table.insert(ids, id)
+        end
+    end
+    file:close()
 end

@@ -2,14 +2,28 @@
 - [x] test all goals
 - [x] implement a goal only requiring to collect the required location count
   - [x] test
-- [ ] test with all chars (esp. Tainted Chars)
 - [x] fix restock override
   - [x] breaks with binge eater.....
     - [x] steam sale doesn't work now prolly.......
-- [ ] datapackage version caching
 - [x] look into RNG, we seem to get the same cards/pill when we spawn stuff quickly
-- [ ] prevent spawning items on top of ... (esp. when run start with many items)
+- [x] prevent spawning items on top of ... (esp. when run start with many items)
   - [x] other items
-  - [ ] player `-> seems to not work as the player is moving during start (from center pos to actual start pos)`
-- [ ] fix collect behavoir
-  - [ ] collect seems to crash sometimes?
+  - [ ] player `-> seems to not work as the player is moving during start (from center pos to actual start pos). will probably not fix`
+- [x] fix collect behavoir
+  - [x] collect seems to crash sometimes? maybe forfeit too? `fixed... I think?`
+- [x] implement all collectables for start inv
+- [x] boss rewards
+  - [x] crashes on beast
+  - [ ] fix most boss shouldnt give reward on delirum stage
+- [x] go thru the discord thread for potential other options/functions
+- [x] traps
+  - [ ] more traps!
+- [x] death link
+- [ ] wighting / balancing
+- [x] use RNG class from TBoI for hopefully better RNG
+- [ ] figure out a better way to input AP host/port/slot name/password
+- [ ] whatever other great options AP has I don't know about
+- [ ] test with all chars (esp. Tainted Chars)
+- [ ] datapackage version caching
+  - [x] needs RoomInfo fix
+- [ ] look into non blocking with socket.select
