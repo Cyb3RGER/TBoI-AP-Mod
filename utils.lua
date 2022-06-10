@@ -191,3 +191,48 @@ function dump_collectables(id_offset)
     end
     file:close()
 end
+
+function dump_table_to_file(table, filename)
+    require('io')
+    local file = io.open(filename, "w+")
+    file:write(dump_table(table))
+    file:close()
+end
+
+function get_simple_game_data(game_data)
+    if not game_data then
+        return nil
+    end
+    local result = {}
+    result.version = game_data.version  
+    result.games = {}  
+    print(dump_table_to_file(game_data, "gamedata.txt"))
+    for k, v in pairs(game_data.games) do 
+        result.games[k] = {}
+        result.games[k].item_name_to_id = v.item_name_to_id
+        result.games[k].location_name_to_id = v.location_name_to_id
+        result.games[k].version = v.version
+    end
+    return result
+end
+
+function deepcopy(orig, copies)
+    copies = copies or {}
+    local orig_type = type(orig)
+    local copy
+    if orig_type == 'table' then
+        if copies[orig] then
+            copy = copies[orig]
+        else
+            copy = {}
+            copies[orig] = copy
+            for orig_key, orig_value in next, orig, nil do
+                copy[deepcopy(orig_key, copies)] = deepcopy(orig_value, copies)
+            end
+            setmetatable(copy, deepcopy(getmetatable(orig), copies))
+        end
+    else -- number, string, boolean, etc
+        copy = orig
+    end
+    return copy
+end
