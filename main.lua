@@ -455,6 +455,7 @@ function AP:init(host_address, host_port, slot_name, password)
         if not isGoalBoss then
             return
         end
+        local level = Game():GetLevel()
         -- don't send out rewards/goal for other goal bosses in The Void
         if type ~= EntityType.ENTITY_DELIRIUM and level:GetStage() == LevelStage.STAGE7 then 
             return
