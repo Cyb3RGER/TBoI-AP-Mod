@@ -264,17 +264,11 @@ function AP:init(host_address, host_port, slot_name, password)
     print("called AP:init", 2, self.STATE_MACHINE, self.socket)
     -- Isaac mod ref
     self.MOD_REF = RegisterMod("AP", 1)
+    
     -- mod callbacks
-    function self.onPostGameStarted(mod, isContinued)
-        if self.MOD_REF:HasData() then
-            local modData = json.decode(self.MOD_REF:LoadData())
-            if modData and modData.GAME_DATA then
-                self.GAME_DATA = modData.GAME_DATA
-                self:adjustGameData()
-                print("!!! loaded game data from cache !!!")
-            end
-        end
+    function self.onPostGameStarted(mod, isContinued)        
         self.IS_CONTINUED = isContinued
+        self.RECONNECT_TRIES = 0
         self.STATE_MACHINE:set_state(AP.STATE_CONNECTING)
     end
     function self.onPostRender(mod)
@@ -630,6 +624,15 @@ function AP:init(host_address, host_port, slot_name, password)
     self.CHECKED_LOCATIONS = {}
     self.GAME_DATA = nil
     self.GAME_DATA_OG = nil
+    if self.MOD_REF:HasData() then
+        local undecoded = self.MOD_REF:LoadData()
+        local modData = json.decode(undecoded)        
+        if modData and modData.GAME_DATA then
+            self.GAME_DATA = modData.GAME_DATA
+            self:adjustGameData()
+            print("!!! loaded game data from cache !!!")
+        end
+    end
     self.CONNECTION_INFO = nil
     self.ROOM_INFO = nil
     self.MESSAGE_QUEUE = {}
@@ -684,7 +687,7 @@ function AP:getDeathLinkBounceCommand(cause, source)
     source = source or self.SLOT_NAME -- ToDo: append player number
     local time = socket.gettime()
     self.LAST_DEATH_LINK_TIME = time
-    print("AP:getDeathLinkBounceCommand", time, self.LAST_DEATH_LINK_TIME)
+    --print("AP:getDeathLinkBounceCommand", time, self.LAST_DEATH_LINK_TIME)
     return {
         cmd = "Bounce",
         tags = {"DeathLink"},
@@ -709,7 +712,7 @@ function AP:generateCollectableItemImpls(startIdx)
     for i = 0, CollectibleType.NUM_COLLECTIBLES - 2 do
         AP.ITEM_IMPLS[startIdx + i] = function(ap)
             ap:spawnCollectible(i + 1)
-            print(i + 1)
+            --print(i + 1)
         end
     end
 end
@@ -918,9 +921,9 @@ function AP:processBlock(data)
                 end
             end
         elseif cmd == "Bounced" then
-            print(dump_table(block))
+            --print(dump_table(block))
             if block.tags and contains(block.tags, "DeathLink") and block.data then
-                print(self.LAST_DEATH_LINK_TIME, block.data.time)
+                --print(self.LAST_DEATH_LINK_TIME, block.data.time)
                 if self.LAST_DEATH_LINK_TIME ~= nil and tostring(self.LAST_DEATH_LINK_TIME) == tostring(block.data.time) then
                     -- our own package -> Do nothing
                 else
@@ -1186,7 +1189,7 @@ function AP:adjustGameData()
     end
 end
 function AP:processHandshake(data)
-    print('processHandshake: ', data)
+    --print('processHandshake: ', data)
     self.STATE_MACHINE:set_state(AP.STATE_ROOMINFO)
 end
 function AP:sendBlocks(blocks)
@@ -1201,6 +1204,7 @@ function AP:sendBlocks(blocks)
     end
 end
 function AP:receiveHandshake()
+    local start = socket.gettime()
     local data, err = self.socket:sock_receive(1)
     if data ~= nil then
         self.rxBuf = self.rxBuf .. data
@@ -1219,7 +1223,8 @@ function AP:receiveHandshake()
             if #self.rxBuf > 4 and string.sub(self.rxBuf, -4) == "\r\n\r\n" then
                 local result = self.rxBuf
                 self.rxBuf = ''
-                print('received data', result)
+                --print('received data', result)
+                print("execution of receiveHandshake took "..(socket.gettime() - start).."s")
                 self:processHandshake(result)
                 return
             end
@@ -1235,7 +1240,7 @@ function AP:receiveBlock()
         if err == "timeout" then
             if partial then
                 self.rxBuf = self.rxBuf .. partial
-                self.expected_bytes = self.expected_bytes - #partial
+                self.expected_bytes = n - #partial
             end
             return nil
         end
