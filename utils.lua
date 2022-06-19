@@ -206,12 +206,14 @@ function get_simple_game_data(game_data)
     local result = {}
     result.version = game_data.version  
     result.games = {}  
-    print(dump_table_to_file(game_data, "gamedata.txt"))
+    --print(dump_table_to_file(game_data, "gamedata.txt"))
     for k, v in pairs(game_data.games) do 
-        result.games[k] = {}
-        result.games[k].item_name_to_id = v.item_name_to_id
-        result.games[k].location_name_to_id = v.location_name_to_id
-        result.games[k].version = v.version
+        if v.version ~= 0 then    
+            result.games[k] = {}
+            result.games[k].item_name_to_id = v.item_name_to_id
+            result.games[k].location_name_to_id = v.location_name_to_id
+            result.games[k].version = v.version
+        end
     end
     return result
 end

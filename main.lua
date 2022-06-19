@@ -293,8 +293,7 @@ function AP:init(host_address, host_port, slot_name, password)
                 CUR_ITEM_STEP_VAL = self.CUR_ITEM_STEP_VAL,
                 PRICE_TABLE = self.PRICE_TABLE,
                 REROLL_COUNTS = self.REROLL_COUNTS,
-                HAD_STEAM_SALE_COUNT = self.HAD_STEAM_SALE_COUNT,
-                GAME_DATA = get_simple_game_data(self.GAME_DATA)
+                HAD_STEAM_SALE_COUNT = self.HAD_STEAM_SALE_COUNT            
             }))
         end
         self:shutdown()
@@ -623,16 +622,7 @@ function AP:init(host_address, host_port, slot_name, password)
     self.MISSING_LOCATIONS = {}
     self.CHECKED_LOCATIONS = {}
     self.GAME_DATA = nil
-    self.GAME_DATA_OG = nil
-    if self.MOD_REF:HasData() then
-        local undecoded = self.MOD_REF:LoadData()
-        local modData = json.decode(undecoded)        
-        if modData and modData.GAME_DATA then
-            self.GAME_DATA = modData.GAME_DATA
-            self:adjustGameData()
-            print("!!! loaded game data from cache !!!")
-        end
-    end
+    self:loadGameData()    
     self.CONNECTION_INFO = nil
     self.ROOM_INFO = nil
     self.MESSAGE_QUEUE = {}
@@ -1091,21 +1081,20 @@ function AP:processBlock(data)
                     CUR_ITEM_STEP_VAL = 0,
                     REROLL_COUNTS = {},
                     PRICE_TABLE = {},
-                    HAD_STEAM_SALE_COUNT = 0,
-                    GAME_DATA = get_simple_game_data(self.GAME_DATA)
+                    HAD_STEAM_SALE_COUNT = 0                
                 }))
             end
         elseif cmd == "RoomInfo" then
             -- print('!!! got RoomInfo !!!')
             self.ROOM_INFO = block
-            self.OUTDATED_GAMES = {}
-            for k, v in pairs(self.ROOM_INFO.datapackage_versions) do
-                if self.GAME_DATA and self.GAME_DATA.games[k] and self.GAME_DATA.games[k].version then
-                    if self.GAME_DATA.games[k].version ~= v then
-                        table.insert(self.OUTDATED_GAMES, k)
+            local games = self.ROOM_INFO.games
+            table.insert(games, "Archipelago")
+            self.OUTDATED_GAMES = deepcopy(games)
+            for _, v in pairs(games) do
+                if self.GAME_DATA and self.GAME_DATA.games and self.GAME_DATA.games[v] and self.GAME_DATA.games[v].version then
+                    if self.GAME_DATA.games[v].version == self.ROOM_INFO.datapackage_versions[v] then
+                        table.remove(self.OUTDATED_GAMES, findIndex(self.OUTDATED_GAMES, v))
                     end
-                else
-                    table.insert(self.OUTDATED_GAMES, k)
                 end
             end
             if #self.OUTDATED_GAMES > 0 then
@@ -1160,15 +1149,30 @@ function AP:processBlock(data)
                 end
             end
         elseif cmd == "DataPackage" then
-            self.GAME_DATA = block.data
+            if self.GAME_DATA == nil then
+                self.GAME_DATA = {}
+            end
+            if self.GAME_DATA.games == nil then
+                self.GAME_DATA.games = {}                
+            end
+            for k, v in pairs(block.data.games) do
+                self.GAME_DATA.games[k] = block.data.games[k]
+            end       
             self:adjustGameData()
+            self:saveGameData()
             self.STATE_MACHINE:set_state(AP.STATE_CONNECTED)
         else
             print("! dropping packet: unhandled cmd " .. cmd .. " !")
         end
     end
 end
-function AP:adjustGameData()    
+function AP:adjustGameData()
+    if self.GAME_DATA == nil then
+        return
+    end
+    if self.GAME_DATA.games == nil or #self.GAME_DATA.games == 0 then
+        return
+    end
     self.GAME_DATA.item_id_to_name = {}
     self.GAME_DATA.location_id_to_name = {}
     self.GAME_DATA.item_name_to_id = {}
@@ -1292,7 +1296,6 @@ end
 function AP:disconnect()
     self.CONNECTION_INFO = nil
     self.ROOM_INFO = nil
-    self.GAME_DATA = nil
     self.LAMB_KILL = false
     self.LAMB_BODY_KILL = false
     self.HAS_SEND_GOAL_MSG = false
@@ -1407,6 +1410,20 @@ function AP:isGoalBoss(type)
         end
     end
     return false
+end
+
+--AP Game data cache saving/loading
+function AP:saveGameData(games)
+    local file = assert(io.open("data/ap/apcache.dat", "w+"), "Could not write AP cache file")
+    local encoded = json.encode(get_simple_game_data(self.GAME_DATA))
+    file:write(encoded)
+end
+
+function AP:loadGameData()
+    local file = assert(io.open("data/ap/apcache.dat", "r"), "Could not read AP cache file")
+    local encoded = file:read("*all")
+    self.GAME_DATA = json.decode(encoded)
+    self:adjustGameData()
 end
 
 AP(HOST_ADDRESS, HOST_PORT, SLOT_NAME, PASSWORD or "")

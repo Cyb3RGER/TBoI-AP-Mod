@@ -24,7 +24,7 @@
 - [x] death link
 - [x] datapackage version caching
   - [x] needs RoomInfo fix
-    - [ ] better caching with seperate files
+    - [x] better caching ~~with seperate files~~
 - [x] use RNG class from TBoI for hopefully better RNG
 - [x] fix bug were we increase item step but not collect item!
 - [ ] wighting / balancing
