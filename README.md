@@ -1,7 +1,8 @@
 # TBoI AP Mod
 This a Mod for [The Binding of Isaac Repentance](https://store.steampowered.com/app/1426300/The_Binding_of_Isaac_Repentance/) that provides Integration for [Arichpelago Multi World](https://archipelago.gg)
+Needs [Mod Config Menu - Continued](https://gitlab.com/Chifilly/bindingofisaac-modconfigmenu) to configure connection info.
 
-To connect to a game configure the ``connection_info.lua`` inside the mod folder with appropriate AP host address and port as well as your slot name and the AP server password if needed. After filling in the connection details you have to restart the game and can now start a new run.
+To connect to a game configure the connection info (AP Server IP and Port, Slot Name and Room Password) in the Mod Config Menu and hit reconnect.
 
 __Currently WIP__
 
