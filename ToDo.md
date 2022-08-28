@@ -27,10 +27,11 @@
     - [x] better caching ~~with seperate files~~
 - [x] use RNG class from TBoI for hopefully better RNG
 - [x] fix bug were we increase item step but not collect item!
-- [ ] wighting / balancing
 - [ ] test with all chars (esp. Tainted Chars)
+- [ ] wighting / balancing
+- [ ] figure out a better way to input AP host/port/slot name/password
 
 ## Maybe Later:
-- [ ] figure out a better way to input AP host/port/slot name/password
 - [ ] look into non blocking with socket.select
 - [ ] whatever other great options AP has I don't know about
+- [ ] test MCM clash with ReHUD
