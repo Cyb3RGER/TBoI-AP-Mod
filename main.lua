@@ -12,6 +12,7 @@ UNLOCK_TYPING = false
 TYPING_TARGET = nil
 CURRENT_TYPING_STRING = ""
 PRESSED_BUTTONS = {}
+PREV_PRESSED_BUTTONS = {}
 LAST_PRESSED = {
     action = -1,
     controller = -1
@@ -250,6 +251,27 @@ function AP:init()
     self.PASSWORD = ""
     self.SLOT_NAME = "Player1"
     -- print("called AP:init", 1.5, self.HOST_ADDRESS, self.HOST_PORT, self.SLOT_NAME, self.PASSWORD)
+    function self.typeKey(this, key)
+        local keyName = InputHelper.KeyboardToString[key] or "Unknown"
+        -- print("self.typeKey", 1, key, keyName)
+        if #keyName == 1 then
+            if TOGGLE_LOWERCASE then
+                keyName = string.lower(keyName)
+            end
+            CURRENT_TYPING_STRING = CURRENT_TYPING_STRING .. keyName
+        elseif TOGGLE_LOWERCASE and SPECIAL_KEY_MAPPING_LOWER[keyName] then
+            CURRENT_TYPING_STRING = CURRENT_TYPING_STRING .. SPECIAL_KEY_MAPPING_LOWER[keyName]
+        elseif SPECIAL_KEY_MAPPING[keyName] then
+            CURRENT_TYPING_STRING = CURRENT_TYPING_STRING .. SPECIAL_KEY_MAPPING[keyName]
+        elseif keyName == "BACKSPACE" then
+            CURRENT_TYPING_STRING = CURRENT_TYPING_STRING:sub(1, #CURRENT_TYPING_STRING - 1)
+        elseif keyName == "LEFT SHIFT" or keyName == "RIGHT SHIFT" or keyName == "CAPS LOCK" then
+            TOGGLE_LOWERCASE = not TOGGLE_LOWERCASE
+        elseif keyName == "ENTER" or keyName == "ESCAPE" or keyName == "TAB" or keyName == "END" then
+            return true
+        end
+        return false
+    end
     function self.trackTypingInput()
         if not InputHelper or not ModConfigMenu then
             return
@@ -257,7 +279,7 @@ function AP:init()
         if not UNLOCK_TYPING then
             ModConfigMenu.ControlsEnabled = true
             return
-        end
+        end       
         if not ModConfigMenu.IsVisible then
             UNLOCK_TYPING = false
             return
@@ -265,53 +287,61 @@ function AP:init()
         ModConfigMenu.ControlsEnabled = false
         local receivedInput = false
         local endTyping = false
+        --capture input
+        PRESSED_BUTTONS = {}
         for i = 0, 4 do
+            PRESSED_BUTTONS[i] = {}
             for j = 32, 400 do
-                local isAlreadyPressed = false
-                if InputHelper.KeyboardPressed(j, i) then
-                    if PRESSED_BUTTONS[j] then
-                        if PRESSED_BUTTONS[j].cooldown > 0 then
-                            PRESSED_BUTTONS[j].cooldown = PRESSED_BUTTONS[j].cooldown - 1
+                PRESSED_BUTTONS[i][j] = (InputHelper.KeyboardPressed(j, i) and 1 or 0)
+                if PRESSED_BUTTONS[i][j] and PRESSED_BUTTONS[i][j] > 0 and not receivedInput then
+                    receivedInput = true
+                end
+            end
+        end
+        --type input
+        --print("self.trackTypingInput",1,receivedInput)
+        if receivedInput then
+            for i = 0, 4 do    
+                if PRESSED_BUTTONS[i] then
+                    for j = 32, 400 do         
+                        -- if PRESSED_BUTTONS[i][j] and PRESSED_BUTTONS[i][j] > 0 then
+                        --     print("self.trackTypingInput",2,PRESSED_BUTTONS[i][j],PREV_PRESSED_BUTTONS[i][j])                                       
+                        -- end
+                        if PRESSED_BUTTONS[i][j] and PRESSED_BUTTONS[i][j] > 0 and 
+                            not (PREV_PRESSED_BUTTONS and PREV_PRESSED_BUTTONS[i] 
+                                and PREV_PRESSED_BUTTONS[i][j] and PREV_PRESSED_BUTTONS[i][j] > 0 
+                                and (PREV_PRESSED_BUTTONS[i][j] < 900 or PREV_PRESSED_BUTTONS[i][j] % 100 ~= 0)) then                           
+                            endTyping = self:typeKey(j)
                         end
-                        if PRESSED_BUTTONS[j].cooldown == 0 then
-                            PRESSED_BUTTONS[j] = nil
-                        end
-                    else
-                        PRESSED_BUTTONS[j] = {
-                            cooldown = 150
-                        }
-                        LAST_PRESSED = {
-                            action = j,
-                            controller = i
-                        }
-                        receivedInput = true
-                        break
                     end
                 end
             end
         end
-
-        if receivedInput then
-            local keyName = InputHelper.KeyboardToString[LAST_PRESSED.action] or "Unknown"
-            -- print(LAST_PRESSED.controller,LAST_PRESSED.action, PRESSED_BUTTONS[LAST_PRESSED.action].cooldown, keyName)
-            if #keyName == 1 then
-                if TOGGLE_LOWERCASE then
-                    keyName = string.lower(keyName)
+        --copy over captured input
+        if not PREV_PRESSED_BUTTONS then
+            PREV_PRESSED_BUTTONS = PRESSED_BUTTONS
+        else
+            for i = 0, 4 do 
+                if PRESSED_BUTTONS[i] then
+                    if not PREV_PRESSED_BUTTONS[i] then
+                        PREV_PRESSED_BUTTONS[i] = PRESSED_BUTTONS[i]
+                    else
+                        for j = 32, 400 do   
+                            if PRESSED_BUTTONS[i][j] > 0 then
+                                if not PREV_PRESSED_BUTTONS[i][j] then
+                                    PREV_PRESSED_BUTTONS[i][j] = PRESSED_BUTTONS[i][j]
+                                else
+                                    PREV_PRESSED_BUTTONS[i][j] = PREV_PRESSED_BUTTONS[i][j] + PRESSED_BUTTONS[i][j]
+                                end
+                            else
+                                PREV_PRESSED_BUTTONS[i][j] = 0
+                            end
+                        end                                                
+                    end                               
                 end
-                CURRENT_TYPING_STRING = CURRENT_TYPING_STRING .. keyName
-            elseif TOGGLE_LOWERCASE and SPECIAL_KEY_MAPPING_LOWER[keyName] then
-                CURRENT_TYPING_STRING = CURRENT_TYPING_STRING .. SPECIAL_KEY_MAPPING_LOWER[keyName]
-            elseif SPECIAL_KEY_MAPPING[keyName] then
-                CURRENT_TYPING_STRING = CURRENT_TYPING_STRING .. SPECIAL_KEY_MAPPING[keyName]
-            elseif keyName == "BACKSPACE" then
-                CURRENT_TYPING_STRING = CURRENT_TYPING_STRING:sub(1, #CURRENT_TYPING_STRING - 1)
-            elseif keyName == "LEFT SHIFT" or keyName == "RIGHT SHIFT" or keyName == "CAPS LOCK" then
-                TOGGLE_LOWERCASE = not TOGGLE_LOWERCASE
-            elseif keyName == "ENTER" or keyName == "ESCAPE" or keyName == "TAB" or keyName == "END" then
-                endTyping = true
             end
         end
-
+        --end typing
         if endTyping then
             if TYPING_TARGET == "HOST_ADDRESS" then
                 self.HOST_ADDRESS = CURRENT_TYPING_STRING
@@ -328,7 +358,7 @@ function AP:init()
             UNLOCK_TYPING = false
             self:saveConnectionInfo()
         end
-        return false
+        return 
     end
     function self.modConfigMenuInit()
         if ModConfigMenu == nil then
@@ -658,7 +688,7 @@ function AP:init()
     self.rxBuf = ''
     self.currTime = 0
     self.lastTime = 0
-    print("called AP:init", 2, self.STATE_MACHINE, self.socket)
+    print("called AP:init", 2)
     -- Isaac mod ref
     self.MOD_REF = RegisterMod("AP", 1)
     self.modConfigMenuInit()
@@ -963,8 +993,8 @@ function AP:init()
     self.MOD_REF:AddCallback(ModCallbacks.MC_POST_PICKUP_UPDATE, self.onPostPickupUpdate)
     self.MOD_REF:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, self.onPostNewRoom)
     self.MOD_REF:AddCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, self.onEntityTakeDmg)
-    self.MOD_REF:AddCallback(ModCallbacks.MC_INPUT_ACTION, self.trackTypingInput)
-    print("called AP:init", 3, self.MOD_REF)
+    self.MOD_REF:AddCallback(ModCallbacks.MC_INPUT_ACTION , self.trackTypingInput)
+    print("called AP:init", 3)
     -- global Isaac info
     self.IS_CONTINUED = false
     self.HAS_SEND_GOAL_MSG = false
@@ -1479,15 +1509,13 @@ function AP:processBlock(data)
                     end
                 end
             end
-            if #self.OUTDATED_GAMES > 0 then
-                print("updating datapackages", dump_table(self.OUTDATED_GAMES))
+            if #self.OUTDATED_GAMES > 0 then                
                 self.STATE_MACHINE:set_state(AP.STATE_DATAPACKAGE)
             else
                 self.STATE_MACHINE:set_state(AP.STATE_CONNECTED)
             end
         elseif cmd == "InvalidPacket" then
             print("!!! got InvalidPacket !!!", dump_table(block))
-
         elseif cmd == "Retrieved" then
             print("!!! got Retrieved !!!", dump_table(block))
         elseif cmd == "RoomUpdate" then
@@ -1580,9 +1608,8 @@ function AP:processHandshake(data)
 end
 function AP:sendBlocks(blocks)
     local data = json.encode(blocks) .. "\r\n"
-    print('send', data)
+    -- print('send', data)
     local encoded = frame.encode(data, frame.TEXT, true)
-
     local ret, err = self.socket:sock_send(encoded)
     if err ~= nil and err ~= 'timeout' then
         print('Connection lost:', err)
@@ -1609,8 +1636,7 @@ function AP:receiveHandshake()
             if #self.rxBuf > 4 and string.sub(self.rxBuf, -4) == "\r\n\r\n" then
                 local result = self.rxBuf
                 self.rxBuf = ''
-                -- print('received data', result)
-                print("execution of receiveHandshake took " .. (socket.gettime() - start) .. "s")
+                -- print('received data', result)                
                 self:processHandshake(result)
                 return
             end
