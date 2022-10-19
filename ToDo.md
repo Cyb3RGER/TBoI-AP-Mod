@@ -27,11 +27,28 @@
     - [x] better caching ~~with seperate files~~
 - [x] use RNG class from TBoI for hopefully better RNG
 - [x] fix bug were we increase item step but not collect item!
-- [ ] test with all chars (esp. Tainted Chars)
 - [ ] wighting / balancing
-- [ ] figure out a better way to input AP host/port/slot name/password
+- [x] figure out a better way to input AP host/port/slot name/password
+  - [ ] improve typing?
+- [ ] fix devil deal not accounting for revives
+- [ ] fix Tainted Isaac getting items permanently 
+- [ ] fix temporary characters sending death links
+- [ ] fix flip?
+- [ ] fix crash after goal?
+- [ ] fix Tainted Cain crafted item not giving checks?
+- [ ] fix item drops by Bumbo not added to the check goal?
+- [ ] look into transformation seemingly not working or applying delayed
+- [ ] look into game crashing (and borking save) on beating goal?
+- [ ] add trap: Paralysis
+- [ ] add trap: Wavy Mushroom
+- [ ] fix teleport cucking you out of 2nd knife piece?
 
 ## Maybe Later:
 - [ ] look into non blocking with socket.select
 - [ ] whatever other great options AP has I don't know about
-- [ ] test MCM clash with ReHUD
+- [x] test MCM clash with ReHUD `seems to work on continued`
+  - [ ] test MCM Pure
+- [ ] look into graphics glitch on transformations
+- [ ] look into reruns
+- [ ] replace check items with a AP item on pickup
+  - [ ] fix challenge room always triggering
