@@ -29,19 +29,23 @@
 - [x] fix bug were we increase item step but not collect item!
 - [ ] wighting / balancing
 - [x] figure out a better way to input AP host/port/slot name/password
-  - [ ] improve typing?
-- [ ] fix devil deal not accounting for revives
-- [ ] fix Tainted Isaac getting items permanently 
+  - [x] improve typing?
+- [x] fix required locations max value
+- [x] fix item drops by Bumbo not added to the check goal? `quick test worked fine`
+- [x] add trap: Wavy Mushroom
+- [x] fix teleport cucking you out of 2nd knife piece?
+- [x] fix Tainted Cain crafted item not giving checks? `no good way to fix, will use AP item as replacement on pickup of normal items instead`
+- [ ] add trap: Paralysis `crashes :(`
+- [ ] fix Tainted Isaac getting items permanently `can't find a way to affect Tainted Isaac inv via API`
 - [ ] fix temporary characters sending death links
-- [ ] fix flip?
-- [ ] fix crash after goal?
-- [ ] fix Tainted Cain crafted item not giving checks?
-- [ ] fix item drops by Bumbo not added to the check goal?
-- [ ] look into transformation seemingly not working or applying delayed
 - [ ] look into game crashing (and borking save) on beating goal?
-- [ ] add trap: Paralysis
-- [ ] add trap: Wavy Mushroom
-- [ ] fix teleport cucking you out of 2nd knife piece?
+- [ ] look into transformation seemingly not working or applying delayed
+- [x] replace check items with a AP item on pickup
+  - [x] fix challenge room always triggering
+  - [x] fix death certificate
+  - [x] fix devil deal not accounting for revives
+  - [x] fix double counting pickups
+  - [x] fix flip
 
 ## Maybe Later:
 - [ ] look into non blocking with socket.select
@@ -50,5 +54,3 @@
   - [ ] test MCM Pure
 - [ ] look into graphics glitch on transformations
 - [ ] look into reruns
-- [ ] replace check items with a AP item on pickup
-  - [ ] fix challenge room always triggering

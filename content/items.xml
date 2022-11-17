@@ -1,0 +1,3 @@
+<items gfxroot="gfx/items/" version="1">
+    <passive id="69" name="AP Item" description="AP Check" gfx="color_icon.png" hidden="true" tags="noeden nocantrip quest"/>
+</items>
