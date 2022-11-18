@@ -802,7 +802,7 @@ function AP:init()
             return
         end
         -- check timer
-        if self.PICKUP_TIMER[collectableIndex] and self.PICKUP_TIMER[collectableIndex] > 0 then
+        if self.PICKUP_TIMER and self.PICKUP_TIMER > 0 then
             return false
         end
         local player = collider:ToPlayer()        
@@ -839,7 +839,7 @@ function AP:init()
             -- print("onPrePickupCollision", pickup.Wait, pickup.State)
             local item_step = self.CONNECTION_INFO.slot_data["itemPickupStep"]
             self.CUR_ITEM_STEP_VAL = self.CUR_ITEM_STEP_VAL + 1
-            self.PICKUP_TIMER[collectableIndex] = 90
+            self.PICKUP_TIMER = 90
             print('item is potential AP item', item_step, self.CUR_ITEM_STEP_VAL, #self.MISSING_LOCATIONS,
                 pickup.SubType, pickup.State)
             if self.CUR_ITEM_STEP_VAL == item_step then
@@ -1070,7 +1070,7 @@ function AP:init()
     self.KILLED_BOSSES = {}
     -- -- restock fix related
     self.REROLL_COUNTS = {}
-    self.PICKUP_TIMER = {}
+    self.PICKUP_TIMER = 0
     self.PRICE_TABLE = {}
     self.HAD_STEAM_SALE_COUNT = 0
     -- global AP info
@@ -1839,11 +1839,9 @@ function AP:showDebugInfo()
     Isaac.RenderScaledText("RECONNECT_TRIES: " .. self.RECONNECT_TRIES, 100, lineHeight*4, self.INFO_TEXT_SCALE, self.INFO_TEXT_SCALE, 255, 0, 0, 1)
     Isaac.RenderScaledText("WAIT_TYPING_ENTER_EXIT: " .. WAIT_TYPING_ENTER_EXIT, 100, lineHeight*5, self.INFO_TEXT_SCALE, self.INFO_TEXT_SCALE, 255, 0, 0, 1)
     Isaac.RenderScaledText("#TRAP_QUEUE: " .. #self.TRAP_QUEUE, 100, lineHeight*6, self.INFO_TEXT_SCALE, self.INFO_TEXT_SCALE, 255, 0, 0, 1)
-    Isaac.RenderScaledText("TRAP_QUEUE_TIMER: " .. self.TRAP_QUEUE_TIMER, 100, lineHeight*7, self.INFO_TEXT_SCALE, self.INFO_TEXT_SCALE, 255, 0, 0, 1)
-    --Isaac.RenderScaledText("#PICKUP_TIMER: " .. #self.PICKUP_TIMER, 100, lineHeight*8, self.INFO_TEXT_SCALE, self.INFO_TEXT_SCALE, 255, 0, 0, 1)
-    for k, _ in pairs(self.PICKUP_TIMER) do    
-        Isaac.RenderScaledText("PICKUP_TIMER["..k.."]: " .. self.PICKUP_TIMER[k], 100, lineHeight*9, self.INFO_TEXT_SCALE, self.INFO_TEXT_SCALE, 255, 0, 0, 1)       
-    end
+    Isaac.RenderScaledText("TRAP_QUEUE_TIMER: " .. self.TRAP_QUEUE_TIMER, 100, lineHeight*7, self.INFO_TEXT_SCALE, self.INFO_TEXT_SCALE, 255, 0, 0, 1)       
+    Isaac.RenderScaledText("PICKUP_TIMER: " .. self.PICKUP_TIMER, 100, lineHeight*9, self.INFO_TEXT_SCALE, self.INFO_TEXT_SCALE, 255, 0, 0, 1)       
+    
    
 end
 -- END AP message printing
@@ -1874,13 +1872,9 @@ function AP:showPermanentMessage()
             self.INFO_TEXT_SCALE, self.INFO_TEXT_SCALE, 255, 255, 255, 1)
     end
 end
-function AP:proceedPickupTimer()
-    for k, _ in pairs(self.PICKUP_TIMER) do
-        if self.PICKUP_TIMER[k] > 0 then
-            self.PICKUP_TIMER[k] = self.PICKUP_TIMER[k] - 1
-        else
-            self.PICKUP_TIMER[k] = null;
-        end
+function AP:proceedPickupTimer()    
+    if self.PICKUP_TIMER > 0 then
+        self.PICKUP_TIMER = self.PICKUP_TIMER - 1
     end
 end
 function AP:sendGoalReached()
