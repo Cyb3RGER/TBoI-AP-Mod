@@ -70,7 +70,7 @@ AP = class()
 
 AP.INSTANCE = nil
 
-AP.GAME_NAME = "The Binding of Isaac Rebirth"
+AP.GAME_NAME = "The Binding of Isaac Repentance"
 -- State names for stateMachine
 AP.STATE_CONNECTING = "connecting"
 AP.STATE_HANDSHAKE = "handshake"
@@ -835,11 +835,11 @@ function AP:init()
             --return
         --end
         -- mod:RemoveCallback(ModCallbacks.MC_PRE_PICKUP_COLLISION, self.onPrePickupCollision)
+        self.PICKUP_TIMER = 90
         if player:CanPickupItem() and pickup.Wait <= 0 and pickup.SubType ~= self.AP_ITEM_ID then
             -- print("onPrePickupCollision", pickup.Wait, pickup.State)
             local item_step = self.CONNECTION_INFO.slot_data["itemPickupStep"]
-            self.CUR_ITEM_STEP_VAL = self.CUR_ITEM_STEP_VAL + 1
-            self.PICKUP_TIMER = 90
+            self.CUR_ITEM_STEP_VAL = self.CUR_ITEM_STEP_VAL + 1            
             print('item is potential AP item', item_step, self.CUR_ITEM_STEP_VAL, #self.MISSING_LOCATIONS,
                 pickup.SubType, pickup.State)
             if self.CUR_ITEM_STEP_VAL == item_step then
