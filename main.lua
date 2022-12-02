@@ -206,7 +206,7 @@ AP.ITEM_IMPLS = {
         ap:addToTrapQueue(78772)
     end,
     [78773] = function(ap)
-        ap:addToTrapQueue(78773)
+        ap:addToTrapQueue(78773, 120)
     end,
     [78774] = function(ap)
         ap:addToTrapQueue(78774)
@@ -215,7 +215,7 @@ AP.ITEM_IMPLS = {
         ap:addToTrapQueue(78775)
     end,
     [78776] = function(ap)
-        ap:addToTrapQueue(78776)
+        ap:addToTrapQueue(78776, 120)
     end,
     [78777] = function(ap)
         ap:addToTrapQueue(78777)
@@ -253,10 +253,15 @@ AP.TRAP_IMPLS = {
                 return
             end
         end
+        ap:addToTrapQueue(78775)
     end,
     [78776] = function(ap)
-        -- local player =  Game():GetNearestPlayer(Isaac.GetRandomPosition())        
-        -- player:UsePill(PillEffect.PILLEFFECT_PARALYSIS, 0) -- crashes
+        local player =  Game():GetNearestPlayer(Isaac.GetRandomPosition()) 
+        if player:HasCollectible(ap.AP_ITEM_TRAP_PARALISYS) then
+            ap:addToTrapQueue(78776, 120)
+        else            
+            player:AddCollectible(ap.AP_ITEM_TRAP_PARALISYS)
+        end
     end,
     [78777] = function(ap)
         local player = Game():GetNearestPlayer(Isaac.GetRandomPosition())
@@ -746,6 +751,7 @@ function AP:init()
     -- Isaac mod ref
     self.MOD_REF = RegisterMod("AP", 1)
     self.AP_ITEM_ID = Isaac.GetItemIdByName("AP Item")
+    self.AP_ITEM_TRAP_PARALISYS = Isaac.GetItemIdByName("AP Trap (Paralysis)")
     self.modConfigMenuInit()
     self:loadConnectionInfo()
     self:loadSettings()
@@ -755,7 +761,7 @@ function AP:init()
         self.IS_CONTINUED = isContinued
         self.RECONNECT_TRIES = 0
         self.TRAP_QUEUE = {}
-        self.TRAP_QUEUE_TIMER = 150
+        self.TRAP_QUEUE_TIMER = 150        
         self.STATE_MACHINE:set_state(AP.STATE_CONNECTING)
     end
     function self.onPostRender(mod)
@@ -791,7 +797,7 @@ function AP:init()
         local checkedLocations = #self.CHECKED_LOCATIONS
         local collectableIndex = getCollectableIndex(pickup)
         if pickup.Variant ~= PickupVariant.PICKUP_COLLECTIBLE or collider.Type ~= EntityType.ENTITY_PLAYER or
-            checkedLocations >= totalLocations or pickup.Touched -- used to not make AP spawned item collectable until rerolled
+            checkedLocations >= totalLocations or (pickup.Touched and pickup.SubType ~= self.AP_ITEM_ID) -- used to not make AP spawned item collectable until rerolled
         or pickup.SubType == CollectibleType.COLLECTIBLE_POLAROID or pickup.SubType ==
             CollectibleType.COLLECTIBLE_NEGATIVE or pickup.SubType == CollectibleType.COLLECTIBLE_KEY_PIECE_1 or
             pickup.SubType == CollectibleType.COLLECTIBLE_KEY_PIECE_2 or pickup.SubType ==
@@ -830,10 +836,6 @@ function AP:init()
                 end
             end
         end
-        -- check for boss rush 1st item, since we can't seem to start the boss rush otherwise
-        --if room:GetType() == RoomType.ROOM_BOSSRUSH and not room:IsAmbushDone() then
-            --return
-        --end
         -- mod:RemoveCallback(ModCallbacks.MC_PRE_PICKUP_COLLISION, self.onPrePickupCollision)
         self.PICKUP_TIMER = 90
         if player:CanPickupItem() and pickup.Wait <= 0 and pickup.SubType ~= self.AP_ITEM_ID then
@@ -849,7 +851,8 @@ function AP:init()
                 local itemConfig = Isaac.GetItemConfig():GetCollectible(pickup.SubType)                                
                 -- pickup.SubType = self.AP_ITEM_ID
                 pickup:Morph(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, self.AP_ITEM_ID, true, true,
-                    true)                
+                    true)              
+                pickup.Touched = true --ToDo: Test with boss rush/challenge rooms
                 if itemConfig and itemConfig.Quality > 1 then
                     player:AnimateSad()
                 else
@@ -866,15 +869,23 @@ function AP:init()
             self:clearLocations(1)          
             player:RemoveCollectible(self.AP_ITEM_ID)
         end
+        if player:HasCollectible(self.AP_ITEM_TRAP_PARALISYS) then
+            player:UsePill(PillEffect.PILLEFFECT_PARALYSIS, PillColor.PILL_NULL)
+            player:RemoveCollectible(self.AP_ITEM_TRAP_PARALISYS)
+        end
     end
     function self.onPreSpawnClearAward(mod)
         local room = Game():GetRoom()
         local goal = tonumber(self.CONNECTION_INFO.slot_data["goal"])
         -- check for boss rush
         if room:GetType() == RoomType.ROOM_BOSSRUSH and room:IsAmbushDone() and room:IsClear() then
-            self:clearLocations(2)
+            if self.CONNECTION_INFO.slot_data.additionalBossRewards then
+                self:clearLocations(2)                
+            end
             if goal == 9 then
                 self:sendGoalReached()
+            elseif goal == 16 then
+                self:setPersistentNoteInfo(self.NOTE_TYPES.STAR, Isaac.GetPlayer():GetPlayerType(), self:isHardMode())            
             end
         end
     end
@@ -932,45 +943,83 @@ function AP:init()
         if not contains(bosses, type) then
             return
         end
-        -- print('called entityKill', 3, "is goal boss", type, entity.Variant)    
+        -- print('called entityKill', 3, "is goal boss", type, entity.Variant)  
+        local playerType = Isaac.GetPlayer():GetPlayerType()
+        local isHardMode = self:isHardMode()
         -- blue baby uses a SubType of Isaac => requries special handling
         if type == EntityType.ENTITY_ISAAC then
             if (goal == 2 or goal == 3) and entity.Variant == 0 then
                 self:sendGoalReached()
             elseif (goal == 5 or goal == 6) and entity.Variant == 1 then
                 self:sendGoalReached()
+            elseif goal == 16 then
+                if entity.Variant == 0 then
+                    self:setPersistentNoteInfo(self.NOTE_TYPES.CROSS, playerType, isHardMode)
+                elseif entity.Variant == 1 then
+                    self:setPersistentNoteInfo(self.NOTE_TYPES.POLAROID, playerType, isHardMode)                
+                end            
             end
             return
             -- phase 2 is Variant 10 and ending phase 1 counts as killing Variant 0 sometimes => requries special handling
         elseif type == EntityType.ENTITY_SATAN then
             if entity.Variant == 10 then
-                self:sendGoalReached()
+                if (goal == 2 or goal == 4) then
+                    self:sendGoalReached()                
+                elseif goal == 16 then
+                    self:setPersistentNoteInfo(self.NOTE_TYPES.INVERTED_CROSS, playerType, isHardMode)                
+                end
             end
             return
             -- the lamb uses two entities The Lamb itself + the body => requries special handling
         elseif self.LAMB_KILL and self.LAMB_BODY_KILL then
-            self:sendGoalReached()
+            if goal == 5 or goal == 7 then
+                self:sendGoalReached()
+            elseif goal == 16 then
+                self:setPersistentNoteInfo(self.NOTE_TYPES.NEGATIVE, playerType, isHardMode)                           
+            end
             return
             -- Dogma uses Variant == 2 for the 2nd phase
         elseif type == EntityType.ENTITY_DOGMA then
-            if entity.Variant == 2 then
+            if goal == 11 and entity.Variant == 2 then
                 self:sendGoalReached()
             end
             return
             -- Variant 0 is the final kill
         elseif type == EntityType.ENTITY_BEAST then
             if entity.Variant == 0 then
-                self:sendGoalReached()
+                if goal == 12 then
+                    self:sendGoalReached()
+                elseif goal == 16 then
+                    self:setPersistentNoteInfo(self.NOTE_TYPES.DADS_NOTE, playerType, isHardMode)
+                end
             end
             return
             -- Mother uses Variant == 10 for the 2nd phase
         elseif type == EntityType.ENTITY_MOTHER then
             if entity.Variant == 10 then
-                self:sendGoalReached()
+                if goal == 13 then
+                    self:sendGoalReached()
+                else
+                    self:setPersistentNoteInfo(self.NOTE_TYPES.KNIFE, playerType, isHardMode)
+                end
             end
-            return
+            return        
         else
-            self:sendGoalReached()
+            if goal ~= 16 then
+                self:sendGoalReached()
+            else                
+                if type == EntityType.ENTITY_MOMS_HEART then
+                    self:setPersistentNoteInfo(self.NOTE_TYPES.HEART, playerType, isHardMode)
+                elseif type == EntityType.ENTITY_MEGA_SATAN_2 then
+                    self:setPersistentNoteInfo(self.NOTE_TYPES.BRIMSTONE, playerType, isHardMode)
+                elseif type == EntityType.ENTITY_HUSH then
+                    self:setPersistentNoteInfo(self.NOTE_TYPES.HUSHS_FACE, playerType, isHardMode)
+                elseif type == EntityType.ENTITY_ULTRA_GREED then
+                    self:setPersistentNoteInfo(self.NOTE_TYPES.CENT_SIGN, playerType, isHardMode) 
+                elseif type == EntityType.ENTITY_DELIRIUM then
+                    self:setPersistentNoteInfo(self.NOTE_TYPES.WRINKLED_PAPER, playerType, isHardMode)          
+                end
+            end
             return
         end
     end
@@ -1045,7 +1094,10 @@ function AP:init()
         [12] = {EntityType.ENTITY_BEAST}, -- TESTED
         [13] = {EntityType.ENTITY_MOTHER}, -- TESTED
         [14] = {EntityType.ENTITY_DELIRIUM}, -- TESTED
-        [15] = {}
+        [15] = {},
+        [16] = {EntityType.ENTITY_MOMS_HEART, EntityType.ENTITY_ISAAC, 
+                EntityType.ENTITY_SATAN, EntityType.ENTITY_THE_LAMB, EntityType.ENTITY_MEGA_SATAN_2,
+                EntityType.ENTITY_HUSH, EntityType.ENTITY_DOGMA, EntityType.ENTITY_BEAST, EntityType.ENTITY_MOTHER, EntityType.ENTITY_DELIRIUM}
     }
     self.GOAL_NAMES = {
         [0] = "Mom",
@@ -1063,7 +1115,59 @@ function AP:init()
         [12] = "The Beast",
         [13] = "Mother",
         [14] = "Delirium",
-        [15] = "Required locations"
+        [15] = "Required locations",
+        [16] = "Full Note(s)",
+    }
+    self.NOTE_TYPES = {
+        HEART = 0,
+        CROSS = 1,
+        POLAROID = 2,
+        INVERTED_CROSS = 3,
+        NEGATIVE = 4,
+        BRIMSTONE = 5,
+        STAR = 6,
+        HUSHS_FACE = 7,
+        --CENT_SIGN = 8,
+        WRINKLED_PAPER = 9,
+        KNIFE = 10,
+        DADS_NOTE = 11,        
+    }
+    self.NOTE_CHARS = {
+        [0] = {PlayerType.PLAYER_ISAAC},
+        [1] = {PlayerType.PLAYER_MAGDALENE},
+        [2] = {PlayerType.PLAYER_CAIN},
+        [3] = {PlayerType.PLAYER_JUDAS, PlayerType.PLAYER_BLACKJUDAS},
+        [4] = {PlayerType.PLAYER_BLUEBABY},
+        [5] = {PlayerType.PLAYER_EVE},
+        [6] = {PlayerType.PLAYER_SAMSON},
+        [7] = {PlayerType.PLAYER_AZAZEL},
+        [8] = {PlayerType.PLAYER_LAZARUS, PlayerType.PLAYER_LAZARUS2},
+        [9] = {PlayerType.PLAYER_EDEN},
+        [10] = {PlayerType.PLAYER_THELOST},
+        [11] = {PlayerType.PLAYER_LILITH},
+        [12] = {PlayerType.PLAYER_KEEPER},
+        [13] = {PlayerType.PLAYER_APOLLYON},
+        [14] = {PlayerType.PLAYER_THESOUL},
+        [15] = {PlayerType.PLAYER_BETHANY},
+        [16] = {PlayerType.PLAYER_JACOB},
+        [17] = {PlayerType.PLAYER_ESAU},
+        [18] = {PlayerType.PLAYER_ISAAC_B},
+        [19] = {PlayerType.PLAYER_MAGDALENE_B},
+        [20] = {PlayerType.PLAYER_CAIN_B},
+        [21] = {PlayerType.PLAYER_JUDAS_B},
+        [22] = {PlayerType.PLAYER_BLUEBABY_B},
+        [23] = {PlayerType.PLAYER_EVE_B},
+        [24] = {PlayerType.PLAYER_SAMSON_B},
+        [25] = {PlayerType.PLAYER_AZAZEL_B},
+        [26] = {PlayerType.PLAYER_LAZARUS_B, PlayerType.PLAYER_LAZARUS2_B},
+        [27] = {PlayerType.PLAYER_EDEN_B},
+        [28] = {PlayerType.PLAYER_THELOST_B},
+        [29] = {PlayerType.PLAYER_LILITH_B},
+        [30] = {PlayerType.PLAYER_KEEPER_B},
+        [31] = {PlayerType.PLAYER_APOLLYON_B},
+        [32] = {PlayerType.PLAYER_THEFORGOTTEN_B},
+        [33] = {PlayerType.PLAYER_BETHANY_B},
+        [34] = {PlayerType.PLAYER_JACOB_B, PlayerType.PLAYER_JACOB2_B}
     }
     self.LAMB_KILL = false
     self.LAMB_BODY_KILL = false
@@ -1092,6 +1196,8 @@ function AP:init()
     self.DEATH_CAUSE = "unknown"
     self.LAST_DEATH_LINK_TIME = nil
     self.LAST_DEATH_LINK_RECV = nil -- ToDo: Implement?
+    self.NOTE_INFO = {}
+    self.COMPLETED_NOTES = 0    
     print("called AP:init", 4, "end")
 end
 
@@ -1154,9 +1260,168 @@ function AP:getUpdateConnectionTagsCommand(tags)
         tags = tags
     }
 end
+function AP:getSetCommand(key, operations, want_reply, default)   
+    if not default then
+        default = "null"
+    end 
+    return {
+        cmd = "Set",
+        key = key,
+        default = default,
+        want_reply = want_reply,
+        operations = operations
+    }
+end
+function AP:getDataStorageOperation(op, value)
+    return {
+        operation = op,
+        value = value
+    }
+end
+function AP:getSetNotifyCommand(keys)
+    return {
+        cmd = "SetNotify",
+        keys = keys,
+    }
+end
+function AP:getGetCommand(keys)
+    --print("AP:getGetCommand", dump_table(keys))
+    return {
+        cmd = "Get",
+        keys = keys,
+    }
+end
 -- AP END Commands
 
 -- AP util funcs
+function AP:getTypeFromDataStorageKey(k)
+    --print("AP:getTypeFromDataStorageKey")
+    local type = "invalid"
+    local splitResult = split(k, "_")
+    if #splitResult >= 4 then
+        if splitResult[1] == "tobir" and tonumber(splitResult[2]) == self.CONNECTION_INFO.team and tonumber(splitResult[3]) == self.CONNECTION_INFO.slot then
+            type = splitResult[4]
+        end
+    end
+    return type
+end
+function AP:setupLocalNoteInfo()
+    --print("AP:setupLocalNoteInfo")
+    self.NOTE_INFO = {}
+    for k,v in pairs(self.NOTE_CHARS) do
+        self.NOTE_INFO[k] = {}
+        for k2,v2 in pairs(self.NOTE_TYPES) do
+            self.NOTE_INFO[k][v2] = false
+        end
+    end
+    --print("AP:setupLocalNoteInfo",2, dump_table(self.NOTE_INFO))
+end
+function AP:countNoteMarksForChar(char)
+    --print("AP:countNoteMarksForChar", char, dump_table(self.NOTE_INFO))
+    if not self.NOTE_INFO[char] then 
+        return 0
+    end
+    local count = 0
+    for _,v in pairs(self.NOTE_TYPES) do             
+        if self.NOTE_INFO[char][v] then
+            count = count + 1
+        end
+    end
+    return count
+end
+function AP:checkNoteInfo()
+    print("AP:checkNoteInfo", 1, dump_table(self.NOTE_INFO))
+    local noteAmount = tonumber(self.CONNECTION_INFO.slot_data["fullNoteAmount"])
+    local goal = tonumber(self.CONNECTION_INFO.slot_data["goal"])
+    if goal ~= 16 then
+        return
+    end
+    local count = 0
+    for k,v in pairs(self.NOTE_CHARS) do
+        if self.NOTE_INFO[k] then             
+            local complete = true           
+            for k2,v2 in pairs(self.NOTE_TYPES) do             
+                if not self.NOTE_INFO[k][v2] then
+                    complete = false
+                end
+            end
+            if complete then
+                count = count + 1
+                if count >= noteAmount then
+                    break
+                end
+            end
+        end
+    end
+    self.COMPLETED_NOTES = count
+    if count >= noteAmount then
+        self:sendGoalReached()
+    end
+end
+function AP:setupPersistentNoteInfo()
+    print("AP:setupPersistentNoteInfo")
+    local keys = {}
+    for k,v in pairs(self.NOTE_TYPES) do
+        for k2,v2 in pairs(self.NOTE_CHARS) do
+            table.insert(keys, self:getNoteInfoKey(v,k2))
+        end
+    end
+    self:sendBlocks({self:getGetCommand(keys), self:getSetNotifyCommand(keys)})
+end
+function AP:syncNoteInfoFromDict(dict)
+    print("AP:syncNoteInfoFromDict", dump_table(dict), dump_table(self.NOTE_INFO))
+    local goal = tonumber(self.CONNECTION_INFO.slot_data["goal"])
+    if goal ~= 16 then
+        return
+    end
+    for k,v in pairs(dict) do
+        if self:getTypeFromDataStorageKey(k) == "note" then            
+            local splitResult = split(k, "_")
+            if #splitResult >= 6 then                                                                  
+                local note_type = tonumber(splitResult[5])
+                local note_char = tonumber(splitResult[6])
+                self.NOTE_INFO[note_char][note_type] = (v == 1)
+            end            
+        end
+    end
+    self:checkNoteInfo()
+end
+function AP:isHardMode()
+    --print("AP:isHardMode")
+    local diff = Game().Difficulty
+    return diff == 1 or diff == 3
+end
+function AP:getNoteInfoKey(note_type, char)
+    --print("AP:getNoteInfoKey", note_type, char)
+    local team = tonumber(self.CONNECTION_INFO.team)
+    local slot = tonumber(self.CONNECTION_INFO.slot)    
+    return "tobir_"..team.."_"..slot.."_note_"..note_type.."_"..char  
+end
+function AP:setPersistentNoteInfo(note_type, player_type, isHardMode)
+    --print("AP:setPersistentNoteInfo", note_type, player_type, isHardMode)
+    local goal = tonumber(self.CONNECTION_INFO.slot_data["goal"])
+    if goal ~= 16 then
+        return
+    end
+    local noteMarkRequireHardMode = self.CONNECTION_INFO.slot_data["noteMarkRequireHardMode"]
+    --print("AP:setPersistentNoteInfo", 2, noteMarkRequireHardMode)
+    if noteMarkRequireHardMode and not isHardMode then
+        return
+    end
+    local char = -1
+    for k, v in pairs(self.NOTE_CHARS) do   
+        --print("AP:setPersistentNoteInfo", 3, player_type, dump_table(v))
+        if contains(v, player_type) then
+            char = k
+            break
+        end
+    end
+    if char == -1 then
+        return    
+    end
+    local key = self:getNoteInfoKey(note_type, char)
+    self:sendBlocks({self:getSetCommand(key, {self:getDataStorageOperation("replace", 1)}, true, 0)})
+end
 function AP:generateCollectableItemImpls(startIdx)
     for i = 0, CollectibleType.NUM_COLLECTIBLES - 2 do
         AP.ITEM_IMPLS[startIdx + i] = function(ap)
@@ -1183,10 +1448,10 @@ function AP:sendBossClearReward(entity)
     local type = entity.Type
     local variant = entity.Variant
 
+    -- boss rush is handled via onPreSpawnClearAward
     if type == EntityType.ENTITY_MOM and variant == 10 then
         self:clearLocations(1)
     elseif type == EntityType.ENTITY_MOMS_HEART and variant == 10 then
-        -- boss rush is handled via onPreSpawnClearAward
         self:clearLocations(2)
     elseif (type == EntityType.ENTITY_ISAAC and variant == 0) or
         (type == EntityType.ENTITY_SATAN and variant == 10 and not self.SATAN_KILL) or type == EntityType.ENTITY_HUSH then
@@ -1249,9 +1514,11 @@ function AP:addToSpawnQueue(type, variant, subType, timeToNextSpawn)
         timeToNextSpawn = timeToNextSpawn
     })
 end
-function AP:addToTrapQueue(trapId)
-    self.TRAP_QUEUE_TIMER = 30
-    table.insert(self.TRAP_QUEUE, trapId)
+function AP:addToTrapQueue(trapId, dur)
+    if not dur then
+        dur = 30
+    end
+    table.insert(self.TRAP_QUEUE, {id = trapId, dur= dur})
 end
 function AP:advanceSpawnQueue()
     if self.SPAWN_QUEUE_TIMER > 0 then
@@ -1298,10 +1565,10 @@ function AP:advanceTrapQueue()
     if #self.TRAP_QUEUE < 1 then
         return
     end
-    local id = self.TRAP_QUEUE[1]
+    local trap = self.TRAP_QUEUE[1]
     table.remove(self.TRAP_QUEUE, 1)
-    self.TRAP_QUEUE_TIMER = 30
-    local trap_impl = AP.TRAP_IMPLS[id]
+    self.TRAP_QUEUE_TIMER = trap.dur
+    local trap_impl = AP.TRAP_IMPLS[trap.id]
     if trap_impl == nil or type(trap_impl) ~= 'function' then
         print("!!! received unknown trap id  !!!", id)
         return
@@ -1388,6 +1655,28 @@ function AP:processBlock(data)
                 self.LAST_RECEIVED_ITEM_INDEX = block.index
                 for _, item in ipairs(block.items) do
                     self:collectItem(item)
+                end
+            end
+        elseif cmd == "SetReply" then
+            print("! got SetReply !", dump_table(block))
+            local key = block.key
+            local splitResult = split(key, "_")
+            --print("! got SetReply !", 2, dump_table(splitResult),#splitResult,self.CONNECTION_INFO.team,self.CONNECTION_INFO.slot)
+            if #splitResult >= 4 then
+                --print("! got SetReply !", 3)
+                if splitResult[1] == "tobir" and tonumber(splitResult[2]) == self.CONNECTION_INFO.team and tonumber(splitResult[3]) == self.CONNECTION_INFO.slot then
+                    local goal = tonumber(self.CONNECTION_INFO.slot_data["goal"])
+                    --print("! got SetReply !", 4, goal)
+                    if goal == 16 and splitResult[4] == "note" and #splitResult >= 6 then                                                                  
+                        --print("! got SetReply !", 5)
+                        local note_type = tonumber(splitResult[5])
+                        local note_char = tonumber(splitResult[6])
+                        if not self.NOTE_INFO[note_char] then
+                            self.NOTE_INFO[note_char] = {}
+                        end
+                        self.NOTE_INFO[note_char][note_type] = (block.value == 1)
+                        self:checkNoteInfo()
+                    end
                 end
             end
         elseif cmd == "Bounced" then
@@ -1509,7 +1798,7 @@ function AP:processBlock(data)
             self.TRAP_QUEUE_TIMER = 150
             -- print("Connected", 1, dump_table(block))
             self.CONNECTION_INFO = block
-            -- print("Connected", 2, dump_table(self.CONNECTION_INFO))
+            --print("Connected", 2, dump_table(self.CONNECTION_INFO))
             if self.CONNECTION_INFO.slot_data.deathLink then
                 self:sendBlocks({self:getUpdateConnectionTagsCommand({"DeathLink"})})
             end
@@ -1531,6 +1820,10 @@ function AP:processBlock(data)
                     self:sendGoalReached()
                 end
             end
+            if goal == 16 then
+                self:setupLocalNoteInfo()
+                self:setupPersistentNoteInfo()                
+            end
             if self.IS_CONTINUED then
                 if not self:loadOtherData(self.CONNECTION_INFO.slot_data["seed"]) then
                     self:shutdown()
@@ -1549,7 +1842,7 @@ function AP:processBlock(data)
                 self.REROLL_COUNTS = {}
                 self.HAD_STEAM_SALE_COUNT = 0
                 self:saveOtherData("")
-            end
+            end            
         elseif cmd == "RoomInfo" then
             -- print('!!! got RoomInfo !!!')
             self.ROOM_INFO = block
@@ -1572,7 +1865,8 @@ function AP:processBlock(data)
         elseif cmd == "InvalidPacket" then
             print("!!! got InvalidPacket !!!", dump_table(block))
         elseif cmd == "Retrieved" then
-            print("!!! got Retrieved !!!", dump_table(block))
+            print("! got Retrieved !", dump_table(block))
+            self:syncNoteInfoFromDict(block.keys)
         elseif cmd == "RoomUpdate" then
             if block.missing_location then
                 for _, v in ipairs(block.missing_location) do
@@ -1864,6 +2158,13 @@ function AP:showPermanentMessage()
                 self.CONNECTION_INFO.slot_data.totalLocations, self.CONNECTION_INFO.slot_data.requiredLocations,
                 self.CUR_ITEM_STEP_VAL, self.CONNECTION_INFO.slot_data.itemPickupStep,
                 self:goalIdToName(self.CONNECTION_INFO.slot_data.goal))
+            if self.CONNECTION_INFO.slot_data.goal == 16 then
+                local reqNoteAmount = tonumber(self.CONNECTION_INFO.slot_data["fullNoteAmount"])
+                local player = Isaac.GetPlayer()
+                local playerType = player:GetPlayerType()
+                local playerName = player:GetName()
+                text2 = text2.." ("..self.COMPLETED_NOTES .."/"..reqNoteAmount..";"..playerName..":"..self:countNoteMarksForChar(playerType).."/"..tablelength(self.NOTE_TYPES)..")"
+            end
             Isaac.RenderScaledText(text2, self.HUD_OFFSET, 260 - 10 * 4 * self.INFO_TEXT_SCALE - self.HUD_OFFSET,
                 self.INFO_TEXT_SCALE, self.INFO_TEXT_SCALE, 255, 255, 255, 1)
         end

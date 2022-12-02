@@ -21,7 +21,7 @@
 - [x] go thru the discord thread for potential other options/functions
 - [x] traps
   - [ ] more traps!
-    - [ ] add trap: Paralysis `crashes :(`
+    - [x] add trap: Paralysis 
     - [x] add trap: Wavy Mushroom
 - [x] death link
 - [x] datapackage version caching
@@ -46,6 +46,11 @@
   - [x] fix double counting pickups
   - [x] fix flip
 - [ ] AP Webhost can't display custom wighting options `potential won't fix but should at least be excluded on webhost`
+- [x] new goal: full note aka all bosses with an extra option for how many chars
+- [ ] docs
+  - [x] add guide to full save file
+  - [ ] test multiplayer
+  - [ ] test mod compatibilty
 
 ## Maybe Later:
 - [ ] wighting / balancing
