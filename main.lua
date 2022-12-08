@@ -1237,6 +1237,16 @@ function AP:getLocationCollectedCommand(ids)
         locations = ids
     }
 end
+function AP:getLocationScoutCommand(ids, create_as_hint)
+    if not create_as_hint then
+        create_as_hint = 0
+    end
+    return {
+        cmd = "LocationScouts",
+        locations = ids,
+        create_as_hint = create_as_hint
+    }
+end
 function AP:getDeathLinkBounceCommand(cause, source)
     cause = cause or AP.GAME_NAME
     source = source or self.SLOT_NAME -- ToDo: append player number
@@ -1425,7 +1435,7 @@ end
 function AP:generateCollectableItemImpls(startIdx)
     for i = 0, CollectibleType.NUM_COLLECTIBLES - 2 do
         AP.ITEM_IMPLS[startIdx + i] = function(ap)
-            ap:spawnCollectible(i + 1)
+            ap:spawnCollectible(i + 1, true)
             -- print(i + 1)
         end
     end
@@ -1482,7 +1492,7 @@ function AP:resolveIdToName(typeStr, id)
             id = tonumber(id)
         end
         return self.GAME_DATA.item_id_to_name[id]
-    elseif string.find(typeStr, "player") then
+    elseif string.find(typeStr, "player") then        
         return self.CONNECTION_INFO.slot_info[id].name -- ToDo: alias via players?
     else
         print('!!! can to resolve Id to Name of unknown type !!!', typeStr)
@@ -1575,12 +1585,15 @@ function AP:advanceTrapQueue()
     end
     trap_impl(self)
 end
-function AP:spawnCollectible(item)
+function AP:spawnCollectible(item, forceItem)    
     local player = Game():GetNearestPlayer(Isaac.GetRandomPosition())
     local item_config = Isaac:GetItemConfig():GetCollectible(item)
-    if item_config.Type ~= ItemType.ITEM_ACTIVE or player:GetActiveItem(ActiveSlot.SLOT_PRIMARY) == 0 then
-        player:QueueItem(item_config) -- FixMe: transformations cause graphical glitches sometimes
-        player:FlushQueueItem()
+    --print("AP:spawnCollectible", player:GetCollectibleCount())
+    if (item_config.Type ~= ItemType.ITEM_ACTIVE or player:GetActiveItem(ActiveSlot.SLOT_PRIMARY) == 0) and not (player:GetPlayerType() == PlayerType.PLAYER_ISAAC_B and player:GetCollectibleCount() > 8) then
+        -- FixMe: transformations cause graphical glitches sometimes
+        --player:QueueItem(item_config)        
+        --player:FlushQueueItem()
+        player:AddCollectible(item)
     else
         local room = Game():GetRoom()
         local num = 1
@@ -1595,8 +1608,13 @@ function AP:spawnCollectible(item)
         -- print("AP:spawnCollectible", "after loop", pos, num)
         local entity = Isaac.Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, item, pos, Vector(0, 0),
             nil)
+        local pickup = entity:ToPickup()
+        if forceItem then
+            --make sure the item does not change into anything else
+            pickup:Morph(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, item, true, true, true)
+        end
         -- used to not make AP spawned item collectable until rerolled
-        entity:ToPickup().Touched = true
+        pickup.Touched = true
     end
 end
 function AP:spawnRandomCollectibleFromPool(pool)
@@ -1865,8 +1883,13 @@ function AP:processBlock(data)
         elseif cmd == "InvalidPacket" then
             print("!!! got InvalidPacket !!!", dump_table(block))
         elseif cmd == "Retrieved" then
-            print("! got Retrieved !", dump_table(block))
+            --print("! got Retrieved !", dump_table(block))
             self:syncNoteInfoFromDict(block.keys)
+        elseif cmd == "LocationInfo" then
+            --for _, v in pairs(block.locations) do
+            --    local name = self:resolveIdToName("item", v.item)            
+            --    local player = self:resolveIdToName("player", tostring(v.player))   
+            --end
         elseif cmd == "RoomUpdate" then
             if block.missing_location then
                 for _, v in ipairs(block.missing_location) do

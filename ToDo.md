@@ -11,7 +11,7 @@
 - [x] look into RNG, we seem to get the same cards/pill when we spawn stuff quickly
 - [x] prevent spawning items on top of ... (esp. when run start with many items)
   - [x] other items
-  - [ ] player `-> seems to not work as the player is moving during start (from center pos to actual start pos). will probably not fix`
+  - [x] ~~player~~ `-> seems to not work as the player is moving during start (from center pos to actual start pos). wont fix`
 - [x] fix collect behavoir
   - [x] collect seems to crash sometimes? maybe forfeit too? `fixed... I think?`
 - [x] implement all collectables for start inv
@@ -34,8 +34,8 @@
 - [x] fix required locations max value
 - [x] fix item drops by Bumbo not added to the check goal? `quick test worked fine`
 - [x] fix teleport cucking you out of 2nd knife piece?
-- [ ] fix Tainted Isaac getting items permanently `can't find a way to affect Tainted Isaac inv via API`
-- [ ] fix temporary characters sending death links `can't find a good way to differentiate via API`
+- [x] fix Tainted Isaac getting items permanently `-> spawn item on ground when 8 item in inv. not prefect but good enough imo`
+- [ ] fix temporary characters sending death links -> can't find a ~~good~~ way to differentiate via API
 - [ ] look into game crashing (and borking save) on beating goal? `can't reproduce`
 - [ ] look into transformation seemingly not working or applying delayed `can't reproduce`
 - [x] replace check items with a AP item on pickup

@@ -258,3 +258,32 @@ function split(str, sep)
     end
     return result
  end
+
+function debugPlayers()
+    local players = {}
+    
+    for i=0, 8, 1 do
+        local player = Game():GetPlayer(i)
+        local found = false
+        for _, v in ipairs(players) do
+            if player.Index == v.Index then
+                found = true
+                break
+            end
+        end
+        if found then
+            break
+        end
+        players[i+1] = player
+    end
+    print("-------------------------------------------------")
+    for i,v in pairs(players) do
+        print(i-1, players[i].Index, players[i].Type, players[i].Variant, players[i].SubType, players[i]:GetPlayerType(),
+         players[i]:GetName(), players[i]:GetMainTwin().Index, players[i]:GetOtherTwin(), players[i]:GetSubPlayer(),
+         players[i]:IsCoopGhost(), players[i]:IsSubPlayer(), players[i]:GetEntityFlags(), players[i].Child, players[i].Parent)
+        if players[i].Parent then
+            print(players[i].Parent.Index)    
+        end
+        print("-------------------------------------------------")
+    end
+end 
