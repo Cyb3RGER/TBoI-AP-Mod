@@ -35,7 +35,7 @@
 - [x] fix item drops by Bumbo not added to the check goal? `quick test worked fine`
 - [x] fix teleport cucking you out of 2nd knife piece?
 - [x] fix Tainted Isaac getting items permanently `-> spawn item on ground when 8 item in inv. not prefect but good enough imo`
-- [ ] fix temporary characters sending death links -> can't find a ~~good~~ way to differentiate via API
+- [ ] fix temporary characters sending death links `-> can't find a ~~good~~ way to differentiate via API`
 - [ ] look into game crashing (and borking save) on beating goal? `can't reproduce`
 - [ ] look into transformation seemingly not working or applying delayed `can't reproduce`
 - [x] replace check items with a AP item on pickup
@@ -45,7 +45,7 @@
   - [x] fix devil deal not accounting for revives
   - [x] fix double counting pickups
   - [x] fix flip
-- [ ] AP Webhost can't display custom wighting options `potential won't fix but should at least be excluded on webhost`
+- [x] AP Webhost can't display custom wighting options `excluded on webhost for now`
 - [x] new goal: full note aka all bosses with an extra option for how many chars
 - [ ] docs
   - [x] add guide to full save file
@@ -58,6 +58,6 @@
 - [ ] look into non blocking with socket.select
 - [ ] whatever other great options AP has I don't know about
 - [x] test MCM clash with ReHUD `seems to work on continued`
-  - [ ] test MCM Pure
+  - [x] test MCM Pure
 - [ ] look into graphics glitch on transformations
 - [ ] look into reruns

@@ -1,3 +1,4 @@
+--IS_WINDOWS = package.config:sub(1, 1) == "\\" or package.config:sub(1, 1) == "\\\\"
 COLORS = {
     RED = {
         R = 255,

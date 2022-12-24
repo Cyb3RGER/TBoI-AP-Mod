@@ -6,70 +6,17 @@ local frame = require('websocket.frame')
 local socket = require('socket')
 require('utils')
 require('statemachine')
--- IS_WINDOWS = package.config:sub(1, 1) == "\\" or package.config:sub(1, 1) == "\\\\"
-LAST_TYPED_CHAR = "None"
-UNLOCK_TYPING = false
-TYPING_TARGET = nil
-CURRENT_TYPING_STRING = ""
-PRESSED_BUTTONS = {}
-PREV_PRESSED_BUTTONS = {}
-WAIT_TYPING_ENTER_EXIT = 0
-LAST_PRESSED = {
-    action = -1,
-    controller = -1
-}
-SPECIAL_KEY_MAPPING = {
-    ["SPACE"] = " ",
-    ["APOSTROPHE"] = "\'",
-    ["COMMA"] = ",",
-    ["MINUS"] = "-",
-    ["PERIOD"] = ".",
-    ["SLASH"] = "/",
-    ["SEMICOLON"] = ";",
-    ["EQUAL"] = "=",
-    ["LEFT BRACKET"] = "[",
-    ["RIGHT BRACKET"] = "]",
-    ["GRAVE ACCENT"] = "`",
-    ["KP_0"] = "0",
-    ["KP_1"] = "1",
-    ["KP_2"] = "2",
-    ["KP_3"] = "3",
-    ["KP_4"] = "4",
-    ["KP_5"] = "5",
-    ["KP_6"] = "6",
-    ["KP_7"] = "7",
-    ["KP_8"] = "8",
-    ["KP_9"] = "9"
-}
-SPECIAL_KEY_MAPPING_UPPER = {
-    ["SPACE"] = " ",
-    ["APOSTROPHE"] = "\"",
-    ["COMMA"] = "<",
-    ["MINUS"] = "_",
-    ["PERIOD"] = ">",
-    ["SLASH"] = "?",
-    ["SEMICOLON"] = ":",
-    ["EQUAL"] = "+",
-    ["LEFT BRACKET"] = "{",
-    ["RIGHT BRACKET"] = "}",
-    ["GRAVE ACCENT"] = "~",
-    ["KP_0"] = "0",
-    ["KP_1"] = "1",
-    ["KP_2"] = "2",
-    ["KP_3"] = "3",
-    ["KP_4"] = "4",
-    ["KP_5"] = "5",
-    ["KP_6"] = "6",
-    ["KP_7"] = "7",
-    ["KP_8"] = "8",
-    ["KP_9"] = "9"
-}
-TOGGLE_LOWERCASE = false
+require('ap_mcm')
 
 AP = class()
 
 AP.INSTANCE = nil
 
+AP.MOD_NAME = "AP Integration"
+-- AP client / Mod version 
+AP.MAJOR_VERSION = "0"
+AP.MINOR_VERSION = "2"
+AP.BUILD_VERSION = "0"
 AP.GAME_NAME = "The Binding of Isaac Repentance"
 -- State names for stateMachine
 AP.STATE_CONNECTING = "connecting"
@@ -221,7 +168,6 @@ AP.ITEM_IMPLS = {
         ap:addToTrapQueue(78777)
     end
 }
-
 AP.TRAP_IMPLS = {
     [78772] = function(ap)
         for i = 0, 5 do
@@ -256,10 +202,10 @@ AP.TRAP_IMPLS = {
         ap:addToTrapQueue(78775)
     end,
     [78776] = function(ap)
-        local player =  Game():GetNearestPlayer(Isaac.GetRandomPosition()) 
+        local player = Game():GetNearestPlayer(Isaac.GetRandomPosition())
         if player:HasCollectible(ap.AP_ITEM_TRAP_PARALISYS) then
             ap:addToTrapQueue(78776, 120)
-        else            
+        else
             player:AddCollectible(ap.AP_ITEM_TRAP_PARALISYS)
         end
     end,
@@ -278,405 +224,12 @@ function AP:init()
     self.DEBUG_MODE = false
     self.INFO_TEXT_SCALE = 1
     self.HUD_OFFSET = 25
-    -- AP client / Mod version 
-    self.MAJOR_VERSION = "0"
-    self.MINOR_VERSION = "2"
-    self.BUILD_VERSION = "0"
-    -- AP Connection info
+    -- AP Connection info (initial values)
     self.HOST_ADDRESS = "localhost"
     self.HOST_PORT = "38281"
     self.PASSWORD = ""
     self.SLOT_NAME = "Player1"
-    -- print("called AP:init", 1.5, self.HOST_ADDRESS, self.HOST_PORT, self.SLOT_NAME, self.PASSWORD)
-    function self.typeKey(this, key)
-        local keyName = InputHelper.KeyboardToString[key] or "Unknown"
-        -- print("self.typeKey", 1, key, keyName)
-        if #keyName == 1 then
-            if not TOGGLE_LOWERCASE then
-                keyName = string.lower(keyName)
-            end
-            CURRENT_TYPING_STRING = CURRENT_TYPING_STRING .. keyName
-        elseif TOGGLE_LOWERCASE and SPECIAL_KEY_MAPPING_UPPER[keyName] then
-            CURRENT_TYPING_STRING = CURRENT_TYPING_STRING .. SPECIAL_KEY_MAPPING_UPPER[keyName]
-        elseif SPECIAL_KEY_MAPPING[keyName] then
-            CURRENT_TYPING_STRING = CURRENT_TYPING_STRING .. SPECIAL_KEY_MAPPING[keyName]
-        elseif keyName == "BACKSPACE" then
-            CURRENT_TYPING_STRING = CURRENT_TYPING_STRING:sub(1, #CURRENT_TYPING_STRING - 1)
-        elseif keyName == "LEFT SHIFT" or keyName == "RIGHT SHIFT" or keyName == "CAPS LOCK" then
-            TOGGLE_LOWERCASE = not TOGGLE_LOWERCASE
-        elseif keyName == "ENTER" or keyName == "ESCAPE" or keyName == "TAB" or keyName == "END" then
-            return true
-        end
-        return false
-    end
-    function self.trackTypingInput()
-        if not InputHelper or not ModConfigMenu then
-            return
-        end
-        if not UNLOCK_TYPING then
-            ModConfigMenu.ControlsEnabled = true
-            return
-        end
-        if not ModConfigMenu.IsVisible then
-            UNLOCK_TYPING = false
-            return
-        end
-
-        ModConfigMenu.ControlsEnabled = false
-        local receivedInput = false
-        local endTyping = false
-        -- capture input
-        PRESSED_BUTTONS = {}
-        for i = 0, 4 do
-            PRESSED_BUTTONS[i] = {}
-            for j = 32, 400 do
-                PRESSED_BUTTONS[i][j] = (InputHelper.KeyboardPressed(j, i) and 1 or 0)
-                if PRESSED_BUTTONS[i][j] and PRESSED_BUTTONS[i][j] > 0 and not receivedInput then
-                    receivedInput = true
-                end
-            end
-        end
-        -- type input
-        -- print("self.trackTypingInput",1,receivedInput)
-        if receivedInput then
-            for i = 0, 4 do
-                if PRESSED_BUTTONS[i] then
-                    for j = 32, 400 do
-                        -- if PRESSED_BUTTONS[i][j] and PRESSED_BUTTONS[i][j] > 0 then
-                        --     print("self.trackTypingInput",2,PRESSED_BUTTONS[i][j],PREV_PRESSED_BUTTONS[i][j])                                       
-                        -- end
-                        if PRESSED_BUTTONS[i][j] and PRESSED_BUTTONS[i][j] > 0 and
-                            not (PREV_PRESSED_BUTTONS and PREV_PRESSED_BUTTONS[i] and PREV_PRESSED_BUTTONS[i][j] and
-                                PREV_PRESSED_BUTTONS[i][j] > 0 and
-                                (PREV_PRESSED_BUTTONS[i][j] < 900 or PREV_PRESSED_BUTTONS[i][j] % 100 ~= 0)) then
-                            endTyping = self:typeKey(j)
-                        end
-                    end
-                end
-            end
-        end
-        -- copy over captured input
-        if not PREV_PRESSED_BUTTONS then
-            PREV_PRESSED_BUTTONS = PRESSED_BUTTONS
-        else
-            for i = 0, 4 do
-                if PRESSED_BUTTONS[i] then
-                    if not PREV_PRESSED_BUTTONS[i] then
-                        PREV_PRESSED_BUTTONS[i] = PRESSED_BUTTONS[i]
-                    else
-                        for j = 32, 400 do
-                            if PRESSED_BUTTONS[i][j] > 0 then
-                                if not PREV_PRESSED_BUTTONS[i][j] then
-                                    PREV_PRESSED_BUTTONS[i][j] = PRESSED_BUTTONS[i][j]
-                                else
-                                    PREV_PRESSED_BUTTONS[i][j] = PREV_PRESSED_BUTTONS[i][j] + PRESSED_BUTTONS[i][j]
-                                end
-                            else
-                                PREV_PRESSED_BUTTONS[i][j] = 0
-                            end
-                        end
-                    end
-                end
-            end
-        end
-        -- end typing
-        if endTyping and WAIT_TYPING_ENTER_EXIT <= 0 then
-            if TYPING_TARGET == "HOST_ADDRESS" then
-                self.HOST_ADDRESS = CURRENT_TYPING_STRING
-            elseif TYPING_TARGET == "HOST_PORT" then
-                self.HOST_PORT = CURRENT_TYPING_STRING
-            elseif TYPING_TARGET == "SLOT_NAME" then
-                self.SLOT_NAME = CURRENT_TYPING_STRING
-            elseif TYPING_TARGET == "PASSWORD" then
-                Isaac.DebugString("set PASSWORD to " .. CURRENT_TYPING_STRING)
-                self.PASSWORD = CURRENT_TYPING_STRING
-            end
-            CURRENT_TYPING_STRING = ""
-            TYPING_TARGET = nil
-            UNLOCK_TYPING = false
-            WAIT_TYPING_ENTER_EXIT = 30
-            self:saveConnectionInfo()
-        end
-        return
-    end
-    function self.modConfigMenuInit()
-        if ModConfigMenu == nil then
-            return
-        end
-        ModConfigMenu.AddSetting("AP Integration", nil, {
-            Type = ModConfigMenu.OptionType.TEXT,
-            CurrentSetting = function()
-                return self.HOST_ADDRESS
-            end,
-            Display = function()
-                return "AP Host Address: " .. (self.HOST_ADDRESS or "")
-            end,
-            OnChange = function(v)
-
-            end,
-            Info = {"This the IP address of the AP Host Server"}
-        })
-        ModConfigMenu.AddSetting("AP Integration", nil, {
-            Type = ModConfigMenu.OptionType.BOOLEAN,
-            CurrentSetting = function()
-                return nil
-            end,
-            Display = function()
-                local text = "Change AP Host Address"
-                if UNLOCK_TYPING and TYPING_TARGET == "HOST_ADDRESS" then
-                    text = "Typing: " .. CURRENT_TYPING_STRING
-                end
-                return text
-            end,
-            OnChange = function(v)
-                if WAIT_TYPING_ENTER_EXIT > 0 then
-                    return
-                end
-                CURRENT_TYPING_STRING = self.HOST_ADDRESS
-                TYPING_TARGET = "HOST_ADDRESS"
-                PREV_PRESSED_BUTTONS = {}
-                WAIT_TYPING_ENTER_EXIT = 30
-                UNLOCK_TYPING = true
-            end,
-            Info = {"ENTER = quit & save, ESC = quit,$newline$newlineSHIFT = toggle case"}
-        })
-        ModConfigMenu.AddSetting("AP Integration", nil, {
-            Type = ModConfigMenu.OptionType.TEXT,
-            CurrentSetting = function()
-                return self.HOST_PORT
-            end,
-            Display = function()
-                return "AP Host Port: " .. (self.HOST_PORT or "")
-            end,
-            OnChange = function(v)
-
-            end,
-            Info = {"This the port of the AP Host Server"}
-        })
-        ModConfigMenu.AddSetting("AP Integration", nil, {
-            Type = ModConfigMenu.OptionType.BOOLEAN,
-            CurrentSetting = function()
-                return nil
-            end,
-            Display = function()
-                local text = "Change AP Host Port"
-                if UNLOCK_TYPING and TYPING_TARGET == "HOST_PORT" then
-                    text = "Typing: " .. CURRENT_TYPING_STRING
-                end
-                return text
-            end,
-            OnChange = function(v)
-                if WAIT_TYPING_ENTER_EXIT > 0 then
-                    return
-                end
-                CURRENT_TYPING_STRING = self.HOST_PORT
-                TYPING_TARGET = "HOST_PORT"
-                PREV_PRESSED_BUTTONS = {}
-                WAIT_TYPING_ENTER_EXIT = 30
-                UNLOCK_TYPING = true
-            end,
-            Info = {"ENTER = quit & save, ESC = quit,$newline$newlineSHIFT = toggle case"}
-        })
-        ModConfigMenu.AddSetting("AP Integration", nil, {
-            Type = ModConfigMenu.OptionType.TEXT,
-            CurrentSetting = function()
-                return self.SLOT_NAME
-            end,
-            Display = function()
-                return "AP Slot Name: " .. (self.SLOT_NAME or "")
-            end,
-            OnChange = function(v)
-
-            end,
-            Info = {"This is the slot name of the slot you want to connect to in the AP Room"}
-        })
-        ModConfigMenu.AddSetting("AP Integration", nil, {
-            Type = ModConfigMenu.OptionType.BOOLEAN,
-            CurrentSetting = function()
-                return nil
-            end,
-            Display = function()
-                local text = "Change AP Slot Name"
-                if UNLOCK_TYPING and TYPING_TARGET == "SLOT_NAME" then
-                    text = "Typing: " .. CURRENT_TYPING_STRING
-                end
-                return text
-            end,
-            OnChange = function(v)
-                if WAIT_TYPING_ENTER_EXIT > 0 then
-                    return
-                end
-                CURRENT_TYPING_STRING = self.SLOT_NAME
-                TYPING_TARGET = "SLOT_NAME"
-                PREV_PRESSED_BUTTONS = {}
-                WAIT_TYPING_ENTER_EXIT = 30
-                UNLOCK_TYPING = true
-            end,
-            Info = {"ENTER = quit & save, ESC = quit,$newline$newlineSHIFT = toggle case"}
-        })
-        ModConfigMenu.AddSetting("AP Integration", nil, {
-            Type = ModConfigMenu.OptionType.TEXT,
-            CurrentSetting = function()
-                return self.PASSWORD
-            end,
-            Display = function()
-                local displayVal = "none"
-                if self.PASSWORD then
-                    displayVal = ""
-                    for i = 1, #self.PASSWORD do
-                        displayVal = displayVal .. "*"
-                    end
-                end
-                return "AP Password: " .. displayVal
-            end,
-            OnChange = function(v)
-
-            end,
-            Info = {"This the password of the AP Room. This is optional."}
-        })
-        ModConfigMenu.AddSetting("AP Integration", nil, {
-            Type = ModConfigMenu.OptionType.BOOLEAN,
-            CurrentSetting = function()
-                return nil
-            end,
-            Display = function()
-                local text = "Change AP Password"
-                if UNLOCK_TYPING and TYPING_TARGET == "PASSWORD" then
-                    text = "Typing: " .. CURRENT_TYPING_STRING
-                end
-                return text
-            end,
-            OnChange = function(v)
-                if WAIT_TYPING_ENTER_EXIT > 0 then
-                    return
-                end
-                CURRENT_TYPING_STRING = self.PASSWORD
-                TYPING_TARGET = "PASSWORD"
-                PREV_PRESSED_BUTTONS = {}
-                WAIT_TYPING_ENTER_EXIT = 30
-                UNLOCK_TYPING = true
-            end,
-            Info = {"ENTER = quit & save, ESC = quit,$newline$newlineSHIFT = toggle case"}
-        })
-        -- ModConfigMenu.AddSetting("AP Integration", nil, {
-        --    Type = ModConfigMenu.OptionType.BOOLEAN,
-        --    CurrentSetting = function()
-        --        return nil
-        --    end,
-        --    Display = function()
-        --        return "Change"
-        --    end,
-        --    OnChange = function(v)
-        --        if OPEN_INPUT_COOLDOWN > 0 then
-        --            return
-        --        end
-        --        local cmd = "\"mods/ap/input.sh\""
-        --        if IS_WINDOWS then
-        --            cmd = "start call \"mods/ap/input.bat\""
-        --        end
-        --        print(cmd)
-        --        print(os.execute(cmd))
-        --        OPEN_INPUT_COOLDOWN = 100
-        --        if package.loaded.connection_info then
-        --            package.loaded.connection_info = nil
-        --        end
-        --        local status, temp = pcall(include, 'connection_info')
-        --        print(status, temp)
-        --        if status then
-        --            AP_CONNECTION_INFO = temp
-        --            self:loadConnectionInfo()
-        --        end
-        --    end,
-        --    Info = {"Click this to change the AP Settings"}
-        -- })
-        -- ModConfigMenu.AddSetting("AP Integration", nil, {
-        --    Type = ModConfigMenu.OptionType.BOOLEAN,
-        --    CurrentSetting = function()
-        --        return nil
-        --    end,
-        --    Display = function()
-        --        return "Reload"
-        --    end,
-        --    OnChange = function(v)
-        --        if package.loaded.connection_info then
-        --            package.loaded.connection_info = nil
-        --        end
-        --        local status, temp = pcall(include, 'connection_info')
-        --        if status then
-        --            AP_CONNECTION_INFO = temp
-        --            self:loadConnectionInfo()
-        --        end
-        --    end,
-        --    Info = {"Click this to change the AP Settings"}
-        -- })
-        ModConfigMenu.AddSetting("AP Integration", nil, {
-            Type = ModConfigMenu.OptionType.BOOLEAN,
-            CurrentSetting = function()
-                return nil
-            end,
-            Display = function()
-                return "Reconnect"
-            end,
-            OnChange = function(v)
-                self.RECONNECT_TRIES = 0
-                self:reconnect()
-            end,
-            Info = {"Click this to reconnect to the AP Server"}
-        })
-        local textScales = {0.25, 0.5, 1, 1.1, 1.2, 1.5}
-        ModConfigMenu.AddSetting("AP Integration", nil, {
-            Type = ModConfigMenu.OptionType.NUMBER,
-            CurrentSetting = function()
-                return findIndex(textScales, self.INFO_TEXT_SCALE)
-            end,
-            Minimum = 1,
-            Maximum = #textScales,
-            Display = function()
-                return "Text Scale: " .. self.INFO_TEXT_SCALE
-            end,
-            OnChange = function(v)
-                self.INFO_TEXT_SCALE = textScales[v]
-                self:saveSettings()
-            end,
-            Info = {"Adjust the Text Size of the AP mod"}
-        })
-        local hudOffsets = {0, 5, 10, 15, 20, 25, 30}
-        ModConfigMenu.AddSetting("AP Integration", nil, {
-            Type = ModConfigMenu.OptionType.NUMBER,
-            CurrentSetting = function()
-                return findIndex(hudOffsets, self.HUD_OFFSET)
-            end,
-            Minimum = 1,
-            Maximum = #hudOffsets,
-            Display = function()
-                return "HUD Offset: " .. self.HUD_OFFSET
-            end,
-            OnChange = function(v)
-                self.HUD_OFFSET = hudOffsets[v]
-                self:saveSettings()
-            end,
-            Info = {"Adjust where the AP Text is placed on the HUD"}
-        })
-        ModConfigMenu.AddSetting("AP Integration", nil, {
-            Type = ModConfigMenu.OptionType.BOOLEAN,
-            CurrentSetting = function()
-                return self.DEBUG_MODE
-            end,
-            Display = function()
-                local str = "Off"
-                if self.DEBUG_MODE then
-                    str = "On"
-                end
-                return "Debug Mode: " .. str
-            end,
-            OnChange = function(v)
-                self.DEBUG_MODE = not self.DEBUG_MODE
-                self:saveSettings()
-            end,
-            Info = {"For debugging"}
-        })
-
-    end
+    -- print("called AP:init", 1.5, self.HOST_ADDRESS, self.HOST_PORT, self.SLOT_NAME, self.PASSWORD)    
     -- socket / statemachine
     self.STATE_MACHINE = SimpleStateMachine()
     -- statemachine callbacks
@@ -749,10 +302,10 @@ function AP:init()
     self.lastTime = 0
     print("called AP:init", 2)
     -- Isaac mod ref
-    self.MOD_REF = RegisterMod("AP", 1)
+    self.MOD_REF = RegisterMod(self.MOD_NAME, 1)
     self.AP_ITEM_ID = Isaac.GetItemIdByName("AP Item")
     self.AP_ITEM_TRAP_PARALISYS = Isaac.GetItemIdByName("AP Trap (Paralysis)")
-    self.modConfigMenuInit()
+    self.AP_MCM = AP_MCM(self)
     self:loadConnectionInfo()
     self:loadSettings()
     -- mod callbacks
@@ -761,7 +314,7 @@ function AP:init()
         self.IS_CONTINUED = isContinued
         self.RECONNECT_TRIES = 0
         self.TRAP_QUEUE = {}
-        self.TRAP_QUEUE_TIMER = 150        
+        self.TRAP_QUEUE_TIMER = 150
         self.STATE_MACHINE:set_state(AP.STATE_CONNECTING)
     end
     function self.onPostRender(mod)
@@ -775,9 +328,6 @@ function AP:init()
         self:advanceItemQueue()
         self:advanceTrapQueue()
         self:advanceSpawnQueue()
-        if WAIT_TYPING_ENTER_EXIT > 0 then
-            WAIT_TYPING_ENTER_EXIT = WAIT_TYPING_ENTER_EXIT - 1
-        end
     end
     function self.onPreGameExit(mod, shouldSave)
         self.ITEM_QUEUE = {}
@@ -811,10 +361,10 @@ function AP:init()
         if self.PICKUP_TIMER and self.PICKUP_TIMER > 0 then
             return false
         end
-        local player = collider:ToPlayer()        
+        local player = collider:ToPlayer()
         local room = Game():GetRoom()
-         -- check if we can buy this, if shop item
-         if pickup:IsShopItem() then
+        -- check if we can buy this, if shop item
+        if pickup:IsShopItem() then
             if pickup.Price > 0 then
                 if pickup.Price > collider:ToPlayer():GetNumCoins() then
                     return
@@ -841,23 +391,23 @@ function AP:init()
         if player:CanPickupItem() and pickup.Wait <= 0 and pickup.SubType ~= self.AP_ITEM_ID then
             -- print("onPrePickupCollision", pickup.Wait, pickup.State)
             local item_step = self.CONNECTION_INFO.slot_data["itemPickupStep"]
-            self.CUR_ITEM_STEP_VAL = self.CUR_ITEM_STEP_VAL + 1            
+            self.CUR_ITEM_STEP_VAL = self.CUR_ITEM_STEP_VAL + 1
             print('item is potential AP item', item_step, self.CUR_ITEM_STEP_VAL, #self.MISSING_LOCATIONS,
                 pickup.SubType, pickup.State)
             if self.CUR_ITEM_STEP_VAL == item_step then
                 -- self:clearLocations(1)                
                 self.CUR_ITEM_STEP_VAL = 0
                 print("onPrePickupCollision", self.AP_ITEM_ID)
-                local itemConfig = Isaac.GetItemConfig():GetCollectible(pickup.SubType)                                
+                local itemConfig = Isaac.GetItemConfig():GetCollectible(pickup.SubType)
                 -- pickup.SubType = self.AP_ITEM_ID
                 pickup:Morph(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, self.AP_ITEM_ID, true, true,
-                    true)              
-                pickup.Touched = true --ToDo: Test with boss rush/challenge rooms
+                    true)
+                pickup.Touched = true -- ToDo: Test with boss rush/challenge rooms
                 if itemConfig and itemConfig.Quality > 1 then
                     player:AnimateSad()
                 else
                     player:AnimateHappy()
-                end                
+                end
                 -- mod:AddCallback(ModCallbacks.MC_PRE_PICKUP_COLLISION, self.onPrePickupCollision)
                 return false
             end
@@ -866,7 +416,7 @@ function AP:init()
     end
     function self.onPostPEffectUpdate(mod, player)
         if player:HasCollectible(self.AP_ITEM_ID) then
-            self:clearLocations(1)          
+            self:clearLocations(1)
             player:RemoveCollectible(self.AP_ITEM_ID)
         end
         if player:HasCollectible(self.AP_ITEM_TRAP_PARALISYS) then
@@ -880,18 +430,18 @@ function AP:init()
         -- check for boss rush
         if room:GetType() == RoomType.ROOM_BOSSRUSH and room:IsAmbushDone() and room:IsClear() then
             if self.CONNECTION_INFO.slot_data.additionalBossRewards then
-                self:clearLocations(2)                
+                self:clearLocations(2)
             end
             if goal == 9 then
                 self:sendGoalReached()
             elseif goal == 16 then
-                self:setPersistentNoteInfo(self.NOTE_TYPES.STAR, Isaac.GetPlayer():GetPlayerType(), self:isHardMode())            
+                self:setPersistentNoteInfo(self.NOTE_TYPES.STAR, Isaac.GetPlayer():GetPlayerType(), self:isHardMode())
             end
         end
     end
     function self.onPostEntityKill(mod, entity)
         local player = entity:ToPlayer()
-        --ToDo: make send DeathLink on revive a option?
+        -- ToDo: make send DeathLink on revive a option?
         if player and self.CONNECTION_INFO.slot_data.deathLink and not player:WillPlayerRevive() then
             self:sendBlocks({self:getDeathLinkBounceCommand()})
             self:addMessage({
@@ -956,17 +506,17 @@ function AP:init()
                 if entity.Variant == 0 then
                     self:setPersistentNoteInfo(self.NOTE_TYPES.CROSS, playerType, isHardMode)
                 elseif entity.Variant == 1 then
-                    self:setPersistentNoteInfo(self.NOTE_TYPES.POLAROID, playerType, isHardMode)                
-                end            
+                    self:setPersistentNoteInfo(self.NOTE_TYPES.POLAROID, playerType, isHardMode)
+                end
             end
             return
             -- phase 2 is Variant 10 and ending phase 1 counts as killing Variant 0 sometimes => requries special handling
         elseif type == EntityType.ENTITY_SATAN then
             if entity.Variant == 10 then
                 if (goal == 2 or goal == 4) then
-                    self:sendGoalReached()                
+                    self:sendGoalReached()
                 elseif goal == 16 then
-                    self:setPersistentNoteInfo(self.NOTE_TYPES.INVERTED_CROSS, playerType, isHardMode)                
+                    self:setPersistentNoteInfo(self.NOTE_TYPES.INVERTED_CROSS, playerType, isHardMode)
                 end
             end
             return
@@ -975,7 +525,7 @@ function AP:init()
             if goal == 5 or goal == 7 then
                 self:sendGoalReached()
             elseif goal == 16 then
-                self:setPersistentNoteInfo(self.NOTE_TYPES.NEGATIVE, playerType, isHardMode)                           
+                self:setPersistentNoteInfo(self.NOTE_TYPES.NEGATIVE, playerType, isHardMode)
             end
             return
             -- Dogma uses Variant == 2 for the 2nd phase
@@ -1003,11 +553,11 @@ function AP:init()
                     self:setPersistentNoteInfo(self.NOTE_TYPES.KNIFE, playerType, isHardMode)
                 end
             end
-            return        
+            return
         else
             if goal ~= 16 then
                 self:sendGoalReached()
-            else                
+            else
                 if type == EntityType.ENTITY_MOMS_HEART then
                     self:setPersistentNoteInfo(self.NOTE_TYPES.HEART, playerType, isHardMode)
                 elseif type == EntityType.ENTITY_MEGA_SATAN_2 then
@@ -1015,52 +565,12 @@ function AP:init()
                 elseif type == EntityType.ENTITY_HUSH then
                     self:setPersistentNoteInfo(self.NOTE_TYPES.HUSHS_FACE, playerType, isHardMode)
                 elseif type == EntityType.ENTITY_ULTRA_GREED then
-                    self:setPersistentNoteInfo(self.NOTE_TYPES.CENT_SIGN, playerType, isHardMode) 
+                    self:setPersistentNoteInfo(self.NOTE_TYPES.CENT_SIGN, playerType, isHardMode)
                 elseif type == EntityType.ENTITY_DELIRIUM then
-                    self:setPersistentNoteInfo(self.NOTE_TYPES.WRINKLED_PAPER, playerType, isHardMode)          
+                    self:setPersistentNoteInfo(self.NOTE_TYPES.WRINKLED_PAPER, playerType, isHardMode)
                 end
             end
             return
-        end
-    end
-    --function self.onPostPickupUpdate(mod, pickup)
-        ---- blame isaac devs for this
-        -- if not pickup:IsShopItem() then
-        --    return
-        -- end
-        ---- adjust prices for steam sale     
-        -- local steamSaleCount = 0
-        -- local playerNum = Game():GetNumPlayers()
-        -- for i = 0, playerNum - 1 do
-        --    local player = Game():GetPlayer(i)
-        --    if player:HasCollectible(CollectibleType.COLLECTIBLE_STEAM_SALE) then
-        --        steamSaleCount = steamSaleCount + player:GetCollectibleNum(CollectibleType.COLLECTIBLE_STEAM_SALE)
-        --    end
-        -- end
-        -- if steamSaleCount ~= self.HAD_STEAM_SALE_COUNT then
-        --    for k, v in pairs(self.PRICE_TABLE) do
-        --        self.PRICE_TABLE[k] = v * (self.HAD_STEAM_SALE_COUNT + 1) / (steamSaleCount + 1)
-        --    end
-        --    self.HAD_STEAM_SALE_COUNT = steamSaleCount
-        -- end
-        ---- blame isaac devs for this
-        -- local collectableIndex = getCollectableIndex(pickup)
-        -- print("onPostPickupUpdate", 1, collectableIndex, pickup.Price)
-        -- if self.PRICE_TABLE[collectableIndex] then
-        --    pickup.AutoUpdatePrice = false
-        --    pickup.Price = math.round(self.PRICE_TABLE[collectableIndex])
-        -- end
-    --end
-    function self.onEntityTakeDmg(mod, entity, amount, flags, source, dmgCountdown)
-        local player = entity:ToPlayer()
-        if not player or flags & 1 == 1 or flags & 2097152 == 2097152 then
-            return
-        end
-        print("onEntityTakeDmg", player.Type, player.Variant, player.SubType, player:GetPlayerType(),
-            player:GetOtherTwin(), player:GetSubPlayer(), player:IsSubPlayer())
-        local health = player:GetHearts() + player:GetSoulHearts()
-        if health - amount <= 0 then
-
         end
     end
     self.MOD_REF:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, self.onPostGameStarted)
@@ -1070,9 +580,6 @@ function AP:init()
     self.MOD_REF:AddCallback(ModCallbacks.MC_POST_PEFFECT_UPDATE, self.onPostPEffectUpdate)
     self.MOD_REF:AddCallback(ModCallbacks.MC_POST_ENTITY_KILL, self.onPostEntityKill)
     self.MOD_REF:AddCallback(ModCallbacks.MC_PRE_SPAWN_CLEAN_AWARD, self.onPreSpawnClearAward)
-    -- self.MOD_REF:AddCallback(ModCallbacks.MC_POST_PICKUP_UPDATE, self.onPostPickupUpdate)
-    self.MOD_REF:AddCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, self.onEntityTakeDmg)
-    self.MOD_REF:AddCallback(ModCallbacks.MC_INPUT_ACTION, self.trackTypingInput)
     print("called AP:init", 3)
     -- global Isaac info
     self.IS_CONTINUED = false
@@ -1095,9 +602,9 @@ function AP:init()
         [13] = {EntityType.ENTITY_MOTHER}, -- TESTED
         [14] = {EntityType.ENTITY_DELIRIUM}, -- TESTED
         [15] = {},
-        [16] = {EntityType.ENTITY_MOMS_HEART, EntityType.ENTITY_ISAAC, 
-                EntityType.ENTITY_SATAN, EntityType.ENTITY_THE_LAMB, EntityType.ENTITY_MEGA_SATAN_2,
-                EntityType.ENTITY_HUSH, EntityType.ENTITY_DOGMA, EntityType.ENTITY_BEAST, EntityType.ENTITY_MOTHER, EntityType.ENTITY_DELIRIUM}
+        [16] = {EntityType.ENTITY_MOMS_HEART, EntityType.ENTITY_ISAAC, EntityType.ENTITY_SATAN,
+                EntityType.ENTITY_THE_LAMB, EntityType.ENTITY_MEGA_SATAN_2, EntityType.ENTITY_HUSH,
+                EntityType.ENTITY_DOGMA, EntityType.ENTITY_BEAST, EntityType.ENTITY_MOTHER, EntityType.ENTITY_DELIRIUM}
     }
     self.GOAL_NAMES = {
         [0] = "Mom",
@@ -1116,7 +623,7 @@ function AP:init()
         [13] = "Mother",
         [14] = "Delirium",
         [15] = "Required locations",
-        [16] = "Full Note(s)",
+        [16] = "Full Note(s)"
     }
     self.NOTE_TYPES = {
         HEART = 0,
@@ -1127,10 +634,10 @@ function AP:init()
         BRIMSTONE = 5,
         STAR = 6,
         HUSHS_FACE = 7,
-        --CENT_SIGN = 8,
+        -- CENT_SIGN = 8,
         WRINKLED_PAPER = 9,
         KNIFE = 10,
-        DADS_NOTE = 11,        
+        DADS_NOTE = 11
     }
     self.NOTE_CHARS = {
         [0] = {PlayerType.PLAYER_ISAAC},
@@ -1173,10 +680,7 @@ function AP:init()
     self.LAMB_BODY_KILL = false
     self.KILLED_BOSSES = {}
     -- -- restock fix related
-    self.REROLL_COUNTS = {}
     self.PICKUP_TIMER = 0
-    self.PRICE_TABLE = {}
-    self.HAD_STEAM_SALE_COUNT = 0
     -- global AP info
     self.LAST_RECEIVED_ITEM_INDEX = -1
     self.CUR_ITEM_STEP_VAL = 0
@@ -1197,7 +701,7 @@ function AP:init()
     self.LAST_DEATH_LINK_TIME = nil
     self.LAST_DEATH_LINK_RECV = nil -- ToDo: Implement?
     self.NOTE_INFO = {}
-    self.COMPLETED_NOTES = 0    
+    self.COMPLETED_NOTES = 0
     print("called AP:init", 4, "end")
 end
 
@@ -1270,10 +774,10 @@ function AP:getUpdateConnectionTagsCommand(tags)
         tags = tags
     }
 end
-function AP:getSetCommand(key, operations, want_reply, default)   
+function AP:getSetCommand(key, operations, want_reply, default)
     if not default then
         default = "null"
-    end 
+    end
     return {
         cmd = "Set",
         key = key,
@@ -1291,48 +795,49 @@ end
 function AP:getSetNotifyCommand(keys)
     return {
         cmd = "SetNotify",
-        keys = keys,
+        keys = keys
     }
 end
 function AP:getGetCommand(keys)
-    --print("AP:getGetCommand", dump_table(keys))
+    -- print("AP:getGetCommand", dump_table(keys))
     return {
         cmd = "Get",
-        keys = keys,
+        keys = keys
     }
 end
 -- AP END Commands
 
 -- AP util funcs
 function AP:getTypeFromDataStorageKey(k)
-    --print("AP:getTypeFromDataStorageKey")
+    -- print("AP:getTypeFromDataStorageKey")
     local type = "invalid"
     local splitResult = split(k, "_")
     if #splitResult >= 4 then
-        if splitResult[1] == "tobir" and tonumber(splitResult[2]) == self.CONNECTION_INFO.team and tonumber(splitResult[3]) == self.CONNECTION_INFO.slot then
+        if splitResult[1] == "tobir" and tonumber(splitResult[2]) == self.CONNECTION_INFO.team and
+            tonumber(splitResult[3]) == self.CONNECTION_INFO.slot then
             type = splitResult[4]
         end
     end
     return type
 end
 function AP:setupLocalNoteInfo()
-    --print("AP:setupLocalNoteInfo")
+    -- print("AP:setupLocalNoteInfo")
     self.NOTE_INFO = {}
-    for k,v in pairs(self.NOTE_CHARS) do
+    for k, v in pairs(self.NOTE_CHARS) do
         self.NOTE_INFO[k] = {}
-        for k2,v2 in pairs(self.NOTE_TYPES) do
+        for k2, v2 in pairs(self.NOTE_TYPES) do
             self.NOTE_INFO[k][v2] = false
         end
     end
-    --print("AP:setupLocalNoteInfo",2, dump_table(self.NOTE_INFO))
+    -- print("AP:setupLocalNoteInfo",2, dump_table(self.NOTE_INFO))
 end
 function AP:countNoteMarksForChar(char)
-    --print("AP:countNoteMarksForChar", char, dump_table(self.NOTE_INFO))
-    if not self.NOTE_INFO[char] then 
+    -- print("AP:countNoteMarksForChar", char, dump_table(self.NOTE_INFO))
+    if not self.NOTE_INFO[char] then
         return 0
     end
     local count = 0
-    for _,v in pairs(self.NOTE_TYPES) do             
+    for _, v in pairs(self.NOTE_TYPES) do
         if self.NOTE_INFO[char][v] then
             count = count + 1
         end
@@ -1347,10 +852,10 @@ function AP:checkNoteInfo()
         return
     end
     local count = 0
-    for k,v in pairs(self.NOTE_CHARS) do
-        if self.NOTE_INFO[k] then             
-            local complete = true           
-            for k2,v2 in pairs(self.NOTE_TYPES) do             
+    for k, v in pairs(self.NOTE_CHARS) do
+        if self.NOTE_INFO[k] then
+            local complete = true
+            for k2, v2 in pairs(self.NOTE_TYPES) do
                 if not self.NOTE_INFO[k][v2] then
                     complete = false
                 end
@@ -1371,9 +876,9 @@ end
 function AP:setupPersistentNoteInfo()
     print("AP:setupPersistentNoteInfo")
     local keys = {}
-    for k,v in pairs(self.NOTE_TYPES) do
-        for k2,v2 in pairs(self.NOTE_CHARS) do
-            table.insert(keys, self:getNoteInfoKey(v,k2))
+    for k, v in pairs(self.NOTE_TYPES) do
+        for k2, v2 in pairs(self.NOTE_CHARS) do
+            table.insert(keys, self:getNoteInfoKey(v, k2))
         end
     end
     self:sendBlocks({self:getGetCommand(keys), self:getSetNotifyCommand(keys)})
@@ -1384,50 +889,50 @@ function AP:syncNoteInfoFromDict(dict)
     if goal ~= 16 then
         return
     end
-    for k,v in pairs(dict) do
-        if self:getTypeFromDataStorageKey(k) == "note" then            
+    for k, v in pairs(dict) do
+        if self:getTypeFromDataStorageKey(k) == "note" then
             local splitResult = split(k, "_")
-            if #splitResult >= 6 then                                                                  
+            if #splitResult >= 6 then
                 local note_type = tonumber(splitResult[5])
                 local note_char = tonumber(splitResult[6])
                 self.NOTE_INFO[note_char][note_type] = (v == 1)
-            end            
+            end
         end
     end
     self:checkNoteInfo()
 end
 function AP:isHardMode()
-    --print("AP:isHardMode")
+    -- print("AP:isHardMode")
     local diff = Game().Difficulty
     return diff == 1 or diff == 3
 end
 function AP:getNoteInfoKey(note_type, char)
-    --print("AP:getNoteInfoKey", note_type, char)
+    -- print("AP:getNoteInfoKey", note_type, char)
     local team = tonumber(self.CONNECTION_INFO.team)
-    local slot = tonumber(self.CONNECTION_INFO.slot)    
-    return "tobir_"..team.."_"..slot.."_note_"..note_type.."_"..char  
+    local slot = tonumber(self.CONNECTION_INFO.slot)
+    return "tobir_" .. team .. "_" .. slot .. "_note_" .. note_type .. "_" .. char
 end
 function AP:setPersistentNoteInfo(note_type, player_type, isHardMode)
-    --print("AP:setPersistentNoteInfo", note_type, player_type, isHardMode)
+    -- print("AP:setPersistentNoteInfo", note_type, player_type, isHardMode)
     local goal = tonumber(self.CONNECTION_INFO.slot_data["goal"])
     if goal ~= 16 then
         return
     end
     local noteMarkRequireHardMode = self.CONNECTION_INFO.slot_data["noteMarkRequireHardMode"]
-    --print("AP:setPersistentNoteInfo", 2, noteMarkRequireHardMode)
+    -- print("AP:setPersistentNoteInfo", 2, noteMarkRequireHardMode)
     if noteMarkRequireHardMode and not isHardMode then
         return
     end
     local char = -1
-    for k, v in pairs(self.NOTE_CHARS) do   
-        --print("AP:setPersistentNoteInfo", 3, player_type, dump_table(v))
+    for k, v in pairs(self.NOTE_CHARS) do
+        -- print("AP:setPersistentNoteInfo", 3, player_type, dump_table(v))
         if contains(v, player_type) then
             char = k
             break
         end
     end
     if char == -1 then
-        return    
+        return
     end
     local key = self:getNoteInfoKey(note_type, char)
     self:sendBlocks({self:getSetCommand(key, {self:getDataStorageOperation("replace", 1)}, true, 0)})
@@ -1492,7 +997,7 @@ function AP:resolveIdToName(typeStr, id)
             id = tonumber(id)
         end
         return self.GAME_DATA.item_id_to_name[id]
-    elseif string.find(typeStr, "player") then        
+    elseif string.find(typeStr, "player") then
         return self.CONNECTION_INFO.slot_info[id].name -- ToDo: alias via players?
     else
         print('!!! can to resolve Id to Name of unknown type !!!', typeStr)
@@ -1528,7 +1033,10 @@ function AP:addToTrapQueue(trapId, dur)
     if not dur then
         dur = 30
     end
-    table.insert(self.TRAP_QUEUE, {id = trapId, dur= dur})
+    table.insert(self.TRAP_QUEUE, {
+        id = trapId,
+        dur = dur
+    })
 end
 function AP:advanceSpawnQueue()
     if self.SPAWN_QUEUE_TIMER > 0 then
@@ -1585,14 +1093,15 @@ function AP:advanceTrapQueue()
     end
     trap_impl(self)
 end
-function AP:spawnCollectible(item, forceItem)    
+function AP:spawnCollectible(item, forceItem)
     local player = Game():GetNearestPlayer(Isaac.GetRandomPosition())
     local item_config = Isaac:GetItemConfig():GetCollectible(item)
-    --print("AP:spawnCollectible", player:GetCollectibleCount())
-    if (item_config.Type ~= ItemType.ITEM_ACTIVE or player:GetActiveItem(ActiveSlot.SLOT_PRIMARY) == 0) and not (player:GetPlayerType() == PlayerType.PLAYER_ISAAC_B and player:GetCollectibleCount() > 8) then
+    -- print("AP:spawnCollectible", player:GetCollectibleCount())
+    if (item_config.Type ~= ItemType.ITEM_ACTIVE or player:GetActiveItem(ActiveSlot.SLOT_PRIMARY) == 0) and
+        not (player:GetPlayerType() == PlayerType.PLAYER_ISAAC_B and player:GetCollectibleCount() > 8) then
         -- FixMe: transformations cause graphical glitches sometimes
-        --player:QueueItem(item_config)        
-        --player:FlushQueueItem()
+        -- player:QueueItem(item_config)        
+        -- player:FlushQueueItem()
         player:AddCollectible(item)
     else
         local room = Game():GetRoom()
@@ -1610,7 +1119,7 @@ function AP:spawnCollectible(item, forceItem)
             nil)
         local pickup = entity:ToPickup()
         if forceItem then
-            --make sure the item does not change into anything else
+            -- make sure the item does not change into anything else
             pickup:Morph(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, item, true, true, true)
         end
         -- used to not make AP spawned item collectable until rerolled
@@ -1679,14 +1188,15 @@ function AP:processBlock(data)
             print("! got SetReply !", dump_table(block))
             local key = block.key
             local splitResult = split(key, "_")
-            --print("! got SetReply !", 2, dump_table(splitResult),#splitResult,self.CONNECTION_INFO.team,self.CONNECTION_INFO.slot)
+            -- print("! got SetReply !", 2, dump_table(splitResult),#splitResult,self.CONNECTION_INFO.team,self.CONNECTION_INFO.slot)
             if #splitResult >= 4 then
-                --print("! got SetReply !", 3)
-                if splitResult[1] == "tobir" and tonumber(splitResult[2]) == self.CONNECTION_INFO.team and tonumber(splitResult[3]) == self.CONNECTION_INFO.slot then
+                -- print("! got SetReply !", 3)
+                if splitResult[1] == "tobir" and tonumber(splitResult[2]) == self.CONNECTION_INFO.team and
+                    tonumber(splitResult[3]) == self.CONNECTION_INFO.slot then
                     local goal = tonumber(self.CONNECTION_INFO.slot_data["goal"])
-                    --print("! got SetReply !", 4, goal)
-                    if goal == 16 and splitResult[4] == "note" and #splitResult >= 6 then                                                                  
-                        --print("! got SetReply !", 5)
+                    -- print("! got SetReply !", 4, goal)
+                    if goal == 16 and splitResult[4] == "note" and #splitResult >= 6 then
+                        -- print("! got SetReply !", 5)
                         local note_type = tonumber(splitResult[5])
                         local note_char = tonumber(splitResult[6])
                         if not self.NOTE_INFO[note_char] then
@@ -1807,6 +1317,13 @@ function AP:processBlock(data)
             self:addMessage(block.text)
         elseif cmd == "Connected" then
             self.RECONNECT_TRIES = 0
+            self.CONNECTION_INFO = block
+            print("Connected", 1, dump_table(self.CONNECTION_INFO.slot_data))
+            if self.CONNECTION_INFO.slot_data.deathLink then
+                self:sendBlocks({self:getUpdateConnectionTagsCommand({"DeathLink"})})
+            end
+            self.MISSING_LOCATIONS = block.missing_locations
+            self.CHECKED_LOCATIONS = block.checked_locations
             self.HAS_SEND_GOAL_MSG = false
             self.LAMB_KILL = false
             self.LAMB_BODY_KILL = false
@@ -1814,14 +1331,6 @@ function AP:processBlock(data)
             self.ITEM_QUEUE = {}
             self.TRAP_QUEUE = {}
             self.TRAP_QUEUE_TIMER = 150
-            -- print("Connected", 1, dump_table(block))
-            self.CONNECTION_INFO = block
-            --print("Connected", 2, dump_table(self.CONNECTION_INFO))
-            if self.CONNECTION_INFO.slot_data.deathLink then
-                self:sendBlocks({self:getUpdateConnectionTagsCommand({"DeathLink"})})
-            end
-            self.MISSING_LOCATIONS = block.missing_locations
-            self.CHECKED_LOCATIONS = block.checked_locations
             local required_locations = tonumber(self.CONNECTION_INFO.slot_data["requiredLocations"])
             local goal = tonumber(self.CONNECTION_INFO.slot_data["goal"])
             if required_locations and goal and #self.CHECKED_LOCATIONS >= required_locations then
@@ -1840,7 +1349,7 @@ function AP:processBlock(data)
             end
             if goal == 16 then
                 self:setupLocalNoteInfo()
-                self:setupPersistentNoteInfo()                
+                self:setupPersistentNoteInfo()
             end
             if self.IS_CONTINUED then
                 if not self:loadOtherData(self.CONNECTION_INFO.slot_data["seed"]) then
@@ -1856,11 +1365,8 @@ function AP:processBlock(data)
             else
                 self.LAST_RECEIVED_ITEM_INDEX = -1
                 self.CUR_ITEM_STEP_VAL = 0
-                self.PRICE_TABLE = {}
-                self.REROLL_COUNTS = {}
-                self.HAD_STEAM_SALE_COUNT = 0
                 self:saveOtherData("")
-            end            
+            end
         elseif cmd == "RoomInfo" then
             -- print('!!! got RoomInfo !!!')
             self.ROOM_INFO = block
@@ -1883,13 +1389,13 @@ function AP:processBlock(data)
         elseif cmd == "InvalidPacket" then
             print("!!! got InvalidPacket !!!", dump_table(block))
         elseif cmd == "Retrieved" then
-            --print("! got Retrieved !", dump_table(block))
+            -- print("! got Retrieved !", dump_table(block))
             self:syncNoteInfoFromDict(block.keys)
         elseif cmd == "LocationInfo" then
-            --for _, v in pairs(block.locations) do
+            -- for _, v in pairs(block.locations) do
             --    local name = self:resolveIdToName("item", v.item)            
             --    local player = self:resolveIdToName("player", tostring(v.player))   
-            --end
+            -- end
         elseif cmd == "RoomUpdate" then
             if block.missing_location then
                 for _, v in ipairs(block.missing_location) do
@@ -2139,27 +1645,31 @@ function AP:showMessages(pos, color)
     self:proceedMessageQueue()
 end
 function AP:showDebugInfo()
-    local lineHeight = 10*self.INFO_TEXT_SCALE;    
-    Isaac.RenderScaledText("CURRENT_TYPING_STRING: " .. CURRENT_TYPING_STRING, 100, 0, self.INFO_TEXT_SCALE, self.INFO_TEXT_SCALE, 255, 0, 0, 1)
+    local lineHeight = 10 * self.INFO_TEXT_SCALE;
+    Isaac.RenderScaledText("CURRENT_TYPING_STRING: " .. self.AP_MCM.CURRENT_TYPING_STRING, 100, 0, self.INFO_TEXT_SCALE,
+        self.INFO_TEXT_SCALE, 255, 0, 0, 1)
     local unlocktext = "false"
-    if UNLOCK_TYPING then
+    if self.AP_MCM.UNLOCK_TYPING then
         unlocktext = "true"
     end
-    Isaac.RenderScaledText("UNLOCK_TYPING: " .. unlocktext, 100, lineHeight, self.INFO_TEXT_SCALE, self.INFO_TEXT_SCALE, 255, 0, 0, 1)
-    Isaac.RenderScaledText("LAST_PRESSED: " .. LAST_PRESSED.controller .. ", " .. LAST_PRESSED.action, 100, lineHeight*2, self.INFO_TEXT_SCALE, self.INFO_TEXT_SCALE, 255,
-        0, 0, 1)
+    Isaac.RenderScaledText("UNLOCK_TYPING: " .. unlocktext, 100, lineHeight, self.INFO_TEXT_SCALE, self.INFO_TEXT_SCALE,
+        255, 0, 0, 1)
     local toggletext = "false"
-    if TOGGLE_LOWERCASE then
+    if self.AP_MCM.TOGGLE_LOWERCASE then
         toggletext = "true"
     end
-    Isaac.RenderScaledText("TOGGLE_LOWERCASE: " .. toggletext, 100, lineHeight*3, self.INFO_TEXT_SCALE, self.INFO_TEXT_SCALE, 255, 0, 0, 1)
-    Isaac.RenderScaledText("RECONNECT_TRIES: " .. self.RECONNECT_TRIES, 100, lineHeight*4, self.INFO_TEXT_SCALE, self.INFO_TEXT_SCALE, 255, 0, 0, 1)
-    Isaac.RenderScaledText("WAIT_TYPING_ENTER_EXIT: " .. WAIT_TYPING_ENTER_EXIT, 100, lineHeight*5, self.INFO_TEXT_SCALE, self.INFO_TEXT_SCALE, 255, 0, 0, 1)
-    Isaac.RenderScaledText("#TRAP_QUEUE: " .. #self.TRAP_QUEUE, 100, lineHeight*6, self.INFO_TEXT_SCALE, self.INFO_TEXT_SCALE, 255, 0, 0, 1)
-    Isaac.RenderScaledText("TRAP_QUEUE_TIMER: " .. self.TRAP_QUEUE_TIMER, 100, lineHeight*7, self.INFO_TEXT_SCALE, self.INFO_TEXT_SCALE, 255, 0, 0, 1)       
-    Isaac.RenderScaledText("PICKUP_TIMER: " .. self.PICKUP_TIMER, 100, lineHeight*9, self.INFO_TEXT_SCALE, self.INFO_TEXT_SCALE, 255, 0, 0, 1)       
-    
-   
+    Isaac.RenderScaledText("TOGGLE_LOWERCASE: " .. toggletext, 100, lineHeight * 2, self.INFO_TEXT_SCALE,
+        self.INFO_TEXT_SCALE, 255, 0, 0, 1)
+    Isaac.RenderScaledText("WAIT_TYPING_ENTER_EXIT: " .. self.AP_MCM.WAIT_TYPING_ENTER_EXIT, 100, lineHeight * 3,
+        self.INFO_TEXT_SCALE, self.INFO_TEXT_SCALE, 255, 0, 0, 1)
+    Isaac.RenderScaledText("RECONNECT_TRIES: " .. self.RECONNECT_TRIES, 100, lineHeight * 4, self.INFO_TEXT_SCALE,
+        self.INFO_TEXT_SCALE, 255, 0, 0, 1)
+    Isaac.RenderScaledText("#TRAP_QUEUE: " .. #self.TRAP_QUEUE, 100, lineHeight * 5, self.INFO_TEXT_SCALE,
+        self.INFO_TEXT_SCALE, 255, 0, 0, 1)
+    Isaac.RenderScaledText("TRAP_QUEUE_TIMER: " .. self.TRAP_QUEUE_TIMER, 100, lineHeight * 6, self.INFO_TEXT_SCALE,
+        self.INFO_TEXT_SCALE, 255, 0, 0, 1)
+    Isaac.RenderScaledText("PICKUP_TIMER: " .. self.PICKUP_TIMER, 100, lineHeight * 7, self.INFO_TEXT_SCALE,
+        self.INFO_TEXT_SCALE, 255, 0, 0, 1)
 end
 -- END AP message printing
 
@@ -2186,7 +1696,8 @@ function AP:showPermanentMessage()
                 local player = Isaac.GetPlayer()
                 local playerType = player:GetPlayerType()
                 local playerName = player:GetName()
-                text2 = text2.." ("..self.COMPLETED_NOTES .."/"..reqNoteAmount..";"..playerName..":"..self:countNoteMarksForChar(playerType).."/"..tablelength(self.NOTE_TYPES)..")"
+                text2 = text2 .. " (" .. self.COMPLETED_NOTES .. "/" .. reqNoteAmount .. ";" .. playerName .. ":" ..
+                            self:countNoteMarksForChar(playerType) .. "/" .. tablelength(self.NOTE_TYPES) .. ")"
             end
             Isaac.RenderScaledText(text2, self.HUD_OFFSET, 260 - 10 * 4 * self.INFO_TEXT_SCALE - self.HUD_OFFSET,
                 self.INFO_TEXT_SCALE, self.INFO_TEXT_SCALE, 255, 255, 255, 1)
@@ -2196,7 +1707,7 @@ function AP:showPermanentMessage()
             self.INFO_TEXT_SCALE, self.INFO_TEXT_SCALE, 255, 255, 255, 1)
     end
 end
-function AP:proceedPickupTimer()    
+function AP:proceedPickupTimer()
     if self.PICKUP_TIMER > 0 then
         self.PICKUP_TIMER = self.PICKUP_TIMER - 1
     end
@@ -2264,13 +1775,9 @@ function AP:loadOtherData(seed)
     if self.MOD_REF:HasData() then
         local modData = json.decode(self.MOD_REF:LoadData())
         if modData ~= nil and modData.SAVED_SEED ~= nil and modData.SAVED_ITEM_INDEX ~= nil and
-            modData.CUR_ITEM_STEP_VAL ~= nil and modData.REROLL_COUNTS ~= nil and modData.PRICE_TABLE ~= nil and
-            modData.HAD_STEAM_SALE_COUNT ~= nil and seed == modData.SAVED_SEED then
+            modData.CUR_ITEM_STEP_VAL ~= nil and seed == modData.SAVED_SEED then
             self.LAST_RECEIVED_ITEM_INDEX = modData.SAVED_ITEM_INDEX
             self.CUR_ITEM_STEP_VAL = modData.CUR_ITEM_STEP_VAL
-            self.REROLL_COUNTS = modData.REROLL_COUNTS
-            self.PRICE_TABLE = modData.PRICE_TABLE
-            self.HAD_STEAM_SALE_COUNT = modData.HAD_STEAM_SALE_COUNT
         else
             return false
         end
@@ -2285,9 +1792,6 @@ function AP:saveOtherData(seed)
     modData.SAVED_ITEM_INDEX = self.LAST_RECEIVED_ITEM_INDEX
     modData.SAVED_SEED = seed
     modData.CUR_ITEM_STEP_VAL = self.CUR_ITEM_STEP_VAL
-    modData.PRICE_TABLE = self.PRICE_TABLE
-    modData.REROLL_COUNTS = self.REROLL_COUNTS
-    modData.HAD_STEAM_SALE_COUNT = self.HAD_STEAM_SALE_COUNT
     self.MOD_REF:SaveData(json.encode(modData))
 end
 -- AP Game data cache saving/loading
