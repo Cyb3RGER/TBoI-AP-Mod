@@ -222,8 +222,8 @@ function AP:init()
     self.RNG = RNG()
     self.RNG:SetSeed(Random(), 35)
     self.DEBUG_MODE = false
-    self.INFO_TEXT_SCALE = 1
-    self.HUD_OFFSET = 25
+    self.INFO_TEXT_SCALE = 0.5
+    self.HUD_OFFSET = 5
     -- AP Connection info (initial values)
     self.HOST_ADDRESS = "localhost"
     self.HOST_PORT = "38281"
@@ -304,6 +304,7 @@ function AP:init()
     -- Isaac mod ref
     self.MOD_REF = RegisterMod(self.MOD_NAME, 1)
     self.AP_ITEM_ID = Isaac.GetItemIdByName("AP Item")
+    self.AP_ITEM_ID_CHEAP = Isaac.GetItemIdByName("AP Item (10 coins)")
     self.AP_ITEM_TRAP_PARALISYS = Isaac.GetItemIdByName("AP Trap (Paralysis)")
     self.AP_MCM = AP_MCM(self)
     self:loadConnectionInfo()
@@ -396,12 +397,14 @@ function AP:init()
                 pickup.SubType, pickup.State)
             if self.CUR_ITEM_STEP_VAL == item_step then
                 -- self:clearLocations(1)                
-                self.CUR_ITEM_STEP_VAL = 0
-                print("onPrePickupCollision", self.AP_ITEM_ID)
+                self.CUR_ITEM_STEP_VAL = 0                
                 local itemConfig = Isaac.GetItemConfig():GetCollectible(pickup.SubType)
-                -- pickup.SubType = self.AP_ITEM_ID
-                pickup:Morph(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, self.AP_ITEM_ID, true, true,
-                    true)
+                print("onPrePickupCollision", self.AP_ITEM_ID)
+                if(itemConfig.ShopPrice == 10) then
+                    pickup:Morph(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, self.AP_ITEM_ID_CHEAP, true, true, true)                            
+                else
+                    pickup:Morph(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, self.AP_ITEM_ID, true, true, true)                            
+                end
                 pickup.Touched = true -- ToDo: Test with boss rush/challenge rooms
                 if itemConfig and itemConfig.Quality > 1 then
                     player:AnimateSad()
@@ -418,6 +421,10 @@ function AP:init()
         if player:HasCollectible(self.AP_ITEM_ID) then
             self:clearLocations(1)
             player:RemoveCollectible(self.AP_ITEM_ID)
+        end
+        if player:HasCollectible(self.AP_ITEM_ID_CHEAP) then
+            self:clearLocations(1)
+            player:RemoveCollectible(self.AP_ITEM_ID_CHEAP)
         end
         if player:HasCollectible(self.AP_ITEM_TRAP_PARALISYS) then
             player:UsePill(PillEffect.PILLEFFECT_PARALYSIS, PillColor.PILL_NULL)
@@ -442,7 +449,7 @@ function AP:init()
     function self.onPostEntityKill(mod, entity)
         local player = entity:ToPlayer()
         -- ToDo: make send DeathLink on revive a option?
-        if player and self.CONNECTION_INFO.slot_data.deathLink and not player:WillPlayerRevive() then
+        if player and self.CONNECTION_INFO.slot_data.deathLink and  self.CONNECTION_INFO.slot_data.deathLink == 1 and not player:WillPlayerRevive() then
             self:sendBlocks({self:getDeathLinkBounceCommand()})
             self:addMessage({
                 parts = {{
@@ -1319,7 +1326,8 @@ function AP:processBlock(data)
             self.RECONNECT_TRIES = 0
             self.CONNECTION_INFO = block
             print("Connected", 1, dump_table(self.CONNECTION_INFO.slot_data))
-            if self.CONNECTION_INFO.slot_data.deathLink then
+            print("Connected", 1.5, self.CONNECTION_INFO.slot_data.deathLink)
+            if self.CONNECTION_INFO.slot_data.deathLink and self.CONNECTION_INFO.slot_data.deathLink == 1 then
                 self:sendBlocks({self:getUpdateConnectionTagsCommand({"DeathLink"})})
             end
             self.MISSING_LOCATIONS = block.missing_locations
@@ -1352,7 +1360,7 @@ function AP:processBlock(data)
                 self:setupPersistentNoteInfo()
             end
             if self.IS_CONTINUED then
-                if not self:loadOtherData(self.CONNECTION_INFO.slot_data["seed"]) then
+                if not self:loadOtherData(self.CONNECTION_INFO.slot_data.seed) then
                     self:shutdown()
                     self:addMessage({
                         parts = {{
@@ -1796,13 +1804,26 @@ function AP:saveOtherData(seed)
 end
 -- AP Game data cache saving/loading
 function AP:saveGameData(games)
-    local file = assert(io.open("data/ap/apcache.dat", "w+"), "Could not write AP cache file")
+    --ensure data/ap/ exists
+    if not self.MOD_REF:HasData() then
+        self.MOD_REF:SaveData(json.encode({}))
+    end
+    local file = io.open("data/ap/apcache.dat", "w+")
+    if file == nil then
+        print("Could not write AP cache file")
+        return
+    end
     local encoded = json.encode(get_simple_game_data(self.GAME_DATA))
     file:write(encoded)
 end
 
-function AP:loadGameData()
-    local file = assert(io.open("data/ap/apcache.dat", "r"), "Could not read AP cache file")
+function AP:loadGameData()    
+    local file = io.open("data/ap/apcache.dat", "r")
+    if file == nil then        
+        print("Could not read AP cache file")
+        self.GAME_DATA = {}
+        return
+    end
     local encoded = file:read("*all")
     self.GAME_DATA = json.decode(encoded)
     self:adjustGameData()

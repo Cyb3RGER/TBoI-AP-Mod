@@ -51,6 +51,10 @@
   - [x] add guide to full save file
   - [ ] test multiplayer
   - [ ] test mod compatibilty
+- [x] fix AP cache init failure
+- [x] fix Deathlink always set
+- [x] fix price reset on morphing shop item (low price items)
+- [ ] kick for wrong seed on reconnect?
 
 ## Maybe Later:
 - [ ] wighting / balancing
