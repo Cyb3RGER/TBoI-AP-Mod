@@ -55,6 +55,12 @@
 - [x] fix Deathlink always set
 - [x] fix price reset on morphing shop item (low price items)
 - [ ] kick for wrong seed on reconnect?
+- [x] release button in MCM
+- [x] collect button in MCM
+- [x] list hint button in MCM
+  - [ ] send random item hint button in MCM? => would require item group on AP side as alias??
+- [ ] limit drops per floor as new option
+- [ ] new goal: (certain amount of) note marks
 
 ## Maybe Later:
 - [ ] wighting / balancing
@@ -65,3 +71,4 @@
   - [x] test MCM Pure
 - [ ] look into graphics glitch on transformations
 - [ ] look into reruns
+  - [ ] -> counts as old seed cause isContinued + new seed (?)

@@ -228,6 +228,58 @@ function AP_MCM:init(ap)
         end,
         Info = {"Click this to reconnect to the AP Server"}
     })
+    ModConfigMenu.AddSetting(self.AP_REF.MOD_NAME, nil, {
+        Type = ModConfigMenu.OptionType.BOOLEAN,
+        CurrentSetting = function()
+            return nil
+        end,
+        Display = function()
+            return "List Hints"
+        end,
+        OnChange = function(v)            
+            self.AP_REF:sendHintCommand(false, nil)
+        end,
+        Info = {"Click this to list hints for your world"}
+    })
+    ModConfigMenu.AddSetting(self.AP_REF.MOD_NAME, nil, {
+        Type = ModConfigMenu.OptionType.BOOLEAN,
+        CurrentSetting = function()
+            return nil
+        end,
+        Display = function()
+            return "Get a Hint"
+        end,
+        OnChange = function(v)            
+            self.AP_REF:sendHintCommand(false, "Any Progression")
+        end,
+        Info = {"Click this to a hint for any progression item from your world"}
+    })
+    ModConfigMenu.AddSetting(self.AP_REF.MOD_NAME, nil, {
+        Type = ModConfigMenu.OptionType.BOOLEAN,
+        CurrentSetting = function()
+            return nil
+        end,
+        Display = function()
+            return "Collect"
+        end,
+        OnChange = function(v)            
+            self.AP_REF:collectSlot()
+        end,
+        Info = {"Click this to collect all checks for this world"}
+    })
+    ModConfigMenu.AddSetting(self.AP_REF.MOD_NAME, nil, {
+        Type = ModConfigMenu.OptionType.BOOLEAN,
+        CurrentSetting = function()
+            return nil
+        end,
+        Display = function()
+            return "Release"
+        end,
+        OnChange = function(v)            
+            self.AP_REF:releaseSlot()
+        end,
+        Info = {"Click this to release all checks from this world"}
+    })
     self.TextScales = {0.25, 0.5, 1, 1.1, 1.2, 1.5}
     ModConfigMenu.AddSetting(self.AP_REF.MOD_NAME, nil, {
         Type = ModConfigMenu.OptionType.NUMBER,

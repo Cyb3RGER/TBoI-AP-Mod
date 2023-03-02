@@ -397,13 +397,15 @@ function AP:init()
                 pickup.SubType, pickup.State)
             if self.CUR_ITEM_STEP_VAL == item_step then
                 -- self:clearLocations(1)                
-                self.CUR_ITEM_STEP_VAL = 0                
+                self.CUR_ITEM_STEP_VAL = 0
                 local itemConfig = Isaac.GetItemConfig():GetCollectible(pickup.SubType)
                 print("onPrePickupCollision", self.AP_ITEM_ID)
-                if(itemConfig.ShopPrice == 10) then
-                    pickup:Morph(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, self.AP_ITEM_ID_CHEAP, true, true, true)                            
+                if (itemConfig.ShopPrice == 10) then
+                    pickup:Morph(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, self.AP_ITEM_ID_CHEAP,
+                        true, true, true)
                 else
-                    pickup:Morph(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, self.AP_ITEM_ID, true, true, true)                            
+                    pickup:Morph(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, self.AP_ITEM_ID, true,
+                        true, true)
                 end
                 pickup.Touched = true -- ToDo: Test with boss rush/challenge rooms
                 if itemConfig and itemConfig.Quality > 1 then
@@ -449,7 +451,8 @@ function AP:init()
     function self.onPostEntityKill(mod, entity)
         local player = entity:ToPlayer()
         -- ToDo: make send DeathLink on revive a option?
-        if player and self.CONNECTION_INFO.slot_data.deathLink and  self.CONNECTION_INFO.slot_data.deathLink == 1 and not player:WillPlayerRevive() then
+        if player and self.CONNECTION_INFO.slot_data.deathLink and self.CONNECTION_INFO.slot_data.deathLink == 1 and
+            not player:WillPlayerRevive() then
             self:sendBlocks({self:getDeathLinkBounceCommand()})
             self:addMessage({
                 parts = {{
@@ -556,7 +559,7 @@ function AP:init()
             if entity.Variant == 10 then
                 if goal == 13 then
                     self:sendGoalReached()
-                else
+                elseif goal == 16 then
                     self:setPersistentNoteInfo(self.NOTE_TYPES.KNIFE, playerType, isHardMode)
                 end
             end
@@ -812,9 +815,63 @@ function AP:getGetCommand(keys)
         keys = keys
     }
 end
+function AP:getCollectCommand()
+    return {
+        cmd = "Say",
+        text = "!collect"
+    }
+
+end
+function AP:getReleaseCommand()
+    return {
+        cmd = "Say",
+        text = "!release"
+    }
+
+end
+function AP:getHintCommand(isLocation, name)
+    local text = "!hint"
+    if isLocation then
+        text = text.."_location"        
+    end
+    if name then
+        text = text.." "..name
+    end
+    return {
+        cmd = "Say",
+        text = text
+    }
+
+end
 -- AP END Commands
 
 -- AP util funcs
+function AP:collectSlot()
+    if (self.STATE_MACHINE:get_state() ~= self.STATE_CONNECTED and self.ROOM_INFO.permission.collect == 0) then
+        self:addMessage({
+            parts = {{
+                msg = "You can not collect! (not connected or no permission)",
+                color = COLORS.RED
+            }}
+        })
+        return
+    end
+    self:sendBlocks({self:getCollectCommand()})
+end
+function AP:releaseSlot()
+    if (self.STATE_MACHINE:get_state() ~= self.STATE_CONNECTED and self.ROOM_INFO.permission.release == 0) then
+        self:addMessage({
+            parts = {{
+                msg = "You can not release! (not connected or no permission)",
+                color = COLORS.RED
+            }}
+        })
+    end
+    self:sendBlocks({self:getReleaseCommand()})
+end
+function AP:sendHintCommand(isLocation, name)
+    self:sendBlocks({self:getHintCommand(isLocation, name)})
+end
 function AP:getTypeFromDataStorageKey(k)
     -- print("AP:getTypeFromDataStorageKey")
     local type = "invalid"
@@ -1258,70 +1315,71 @@ function AP:processBlock(data)
             local msg = {
                 parts = {}
             }
-            for _, v in ipairs(block.data) do
-                local text = v.text
-                local color = COLORS.WHITE
-                if not v.type or v.type == "text" then
-                    -- nothing to do                
-                elseif v.type == "player_id" then
-                    text = self:resolveIdToName(v.type, v.text)
-                    color = COLORS.BLUE
-                elseif v.type == "player_name" then
-                    color = COLORS.BLUE
-                elseif v.type == "item_id" then
-                    text = self:resolveIdToName(v.type, v.text)
-                    if v.flags & 4 == 4 then
-                        color = COLORS.RED
-                    elseif v.flags & 2 == 2 or v.flags & 1 == 1 then
-                        color = COLORS.GREEN
-                    else
-                        color = COLORS.YELLOW
-                    end
-                elseif v.type == "item_name" then
-                    if v.flags | 4 == 4 then
-                        color = COLORS.RED
-                    elseif v.flags | 2 == 2 or v.flags | 1 == 1 then
-                        color = COLORS.YELLOW
-                    else
-                        color = COLORS.GREEN
-                    end
-                elseif v.type == "location_id" then
-                    text = self:resolveIdToName(v.type, v.text)
-                    color = COLORS.MAGENTA
-                elseif v.type == "location_name" then
-                    color = COLORS.MAGENTA
-                elseif v.type == "entrance_name" then
-                    color = COLORS.CYAN
-                elseif v.type == "color" then
-                    if v.color == "black" then
-                        color = COLORS.BLACK
-                    elseif v.color == "white" then
-                        color = COLORS.WHITE
-                    elseif v.color == "red" then
-                        color = COLORS.RED
-                    elseif v.color == "green" then
-                        color = COLORS.GREEN
-                    elseif v.color == "blue" then
+            -- ignore own chat messages
+            if not block.type or block.type ~= "Chat" or not block.slot or not self.CONNECTION_INFO or block.slot ~= self.CONNECTION_INFO.slot then 
+                for _, v in ipairs(block.data) do
+                    local text = v.text
+                    local color = COLORS.WHITE
+                    if not v.type or v.type == "text" then
+                        -- nothing to do                
+                    elseif v.type == "player_id" then
+                        text = self:resolveIdToName(v.type, v.text)
                         color = COLORS.BLUE
-                    elseif v.color == "magenta" then
+                    elseif v.type == "player_name" then
+                        color = COLORS.BLUE
+                    elseif v.type == "item_id" then
+                        text = self:resolveIdToName(v.type, v.text)
+                        if v.flags & 4 == 4 then
+                            color = COLORS.RED
+                        elseif v.flags & 2 == 2 or v.flags & 1 == 1 then
+                            color = COLORS.GREEN
+                        else
+                            color = COLORS.YELLOW
+                        end
+                    elseif v.type == "item_name" then
+                        if v.flags | 4 == 4 then
+                            color = COLORS.RED
+                        elseif v.flags | 2 == 2 or v.flags | 1 == 1 then
+                            color = COLORS.YELLOW
+                        else
+                            color = COLORS.GREEN
+                        end
+                    elseif v.type == "location_id" then
+                        text = self:resolveIdToName(v.type, v.text)
                         color = COLORS.MAGENTA
-                    elseif v.color == "cyan" then
+                    elseif v.type == "location_name" then
+                        color = COLORS.MAGENTA
+                    elseif v.type == "entrance_name" then
                         color = COLORS.CYAN
+                    elseif v.type == "color" then
+                        if v.color == "black" then
+                            color = COLORS.BLACK
+                        elseif v.color == "white" then
+                            color = COLORS.WHITE
+                        elseif v.color == "red" then
+                            color = COLORS.RED
+                        elseif v.color == "green" then
+                            color = COLORS.GREEN
+                        elseif v.color == "blue" then
+                            color = COLORS.BLUE
+                        elseif v.color == "magenta" then
+                            color = COLORS.MAGENTA
+                        elseif v.color == "cyan" then
+                            color = COLORS.CYAN
+                        end
                     end
+                    if not text then
+                        text = ""
+                    end
+                    local part = {
+                        msg = text,
+                        color = color,
+                        width = Isaac.GetTextWidth(text)
+                    }
+                    table.insert(msg.parts, part)
                 end
-                if not text then
-                    text = ""
-                end
-                local part = {
-                    msg = text,
-                    color = color,
-                    width = Isaac.GetTextWidth(text)
-                }
-                table.insert(msg.parts, part)
+                self:addMessage(msg)
             end
-            self:addMessage(msg)
-        elseif cmd == "Print" then
-            self:addMessage(block.text)
         elseif cmd == "Connected" then
             self.RECONNECT_TRIES = 0
             self.CONNECTION_INFO = block
@@ -1804,7 +1862,7 @@ function AP:saveOtherData(seed)
 end
 -- AP Game data cache saving/loading
 function AP:saveGameData(games)
-    --ensure data/ap/ exists
+    -- ensure data/ap/ exists
     if not self.MOD_REF:HasData() then
         self.MOD_REF:SaveData(json.encode({}))
     end
@@ -1817,9 +1875,9 @@ function AP:saveGameData(games)
     file:write(encoded)
 end
 
-function AP:loadGameData()    
+function AP:loadGameData()
     local file = io.open("data/ap/apcache.dat", "r")
-    if file == nil then        
+    if file == nil then
         print("Could not read AP cache file")
         self.GAME_DATA = {}
         return
