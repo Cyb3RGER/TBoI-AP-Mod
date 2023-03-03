@@ -47,6 +47,7 @@
   - [x] fix flip
 - [x] AP Webhost can't display custom wighting options `excluded on webhost for now`
 - [x] new goal: full note aka all bosses with an extra option for how many chars
+  - [x] broken? `fixed!`
 - [ ] docs
   - [x] add guide to full save file
   - [ ] test multiplayer
@@ -58,7 +59,7 @@
 - [x] release button in MCM
 - [x] collect button in MCM
 - [x] list hint button in MCM
-  - [ ] send random item hint button in MCM? => would require item group on AP side as alias??
+  - [x] send random item hint button in MCM? => would require item group on AP side as alias??
 - [ ] limit drops per floor as new option
 - [ ] new goal: (certain amount of) note marks
 

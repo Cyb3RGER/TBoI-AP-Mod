@@ -495,7 +495,7 @@ function AP:init()
             self:sendBossClearReward(entity)
         end
         -- we can only win if we check enough locations
-        if #self.CHECKED_LOCATIONS < required_locations then
+        if #self.CHECKED_LOCATIONS < required_locations and goal ~= 16 then
             return
         end
         local bosses = self.GOAL_BOSSES[goal]
@@ -895,8 +895,18 @@ function AP:setupLocalNoteInfo()
     end
     -- print("AP:setupLocalNoteInfo",2, dump_table(self.NOTE_INFO))
 end
-function AP:countNoteMarksForChar(char)
-    -- print("AP:countNoteMarksForChar", char, dump_table(self.NOTE_INFO))
+function AP:countNoteMarksForPlayerType(player_type)
+    local char = -1
+    for k, v in pairs(self.NOTE_CHARS) do
+        if contains(v, player_type) then
+            char = k
+            break
+        end
+    end
+    if char == -1 then
+        return
+    end
+    -- print("AP:countNoteMarksForPlayerType", char, dump_table(self.NOTE_INFO))
     if not self.NOTE_INFO[char] then
         return 0
     end
@@ -909,7 +919,8 @@ function AP:countNoteMarksForChar(char)
     return count
 end
 function AP:checkNoteInfo()
-    print("AP:checkNoteInfo", 1, dump_table(self.NOTE_INFO))
+    -- print("AP:checkNoteInfo", 1, dump_table(self.NOTE_INFO))
+    local required_locations = tonumber(self.CONNECTION_INFO.slot_data["requiredLocations"])
     local noteAmount = tonumber(self.CONNECTION_INFO.slot_data["fullNoteAmount"])
     local goal = tonumber(self.CONNECTION_INFO.slot_data["goal"])
     if goal ~= 16 then
@@ -933,7 +944,7 @@ function AP:checkNoteInfo()
         end
     end
     self.COMPLETED_NOTES = count
-    if count >= noteAmount then
+    if count >= noteAmount and #self.CHECKED_LOCATIONS >= required_locations then
         self:sendGoalReached()
     end
 end
@@ -948,7 +959,7 @@ function AP:setupPersistentNoteInfo()
     self:sendBlocks({self:getGetCommand(keys), self:getSetNotifyCommand(keys)})
 end
 function AP:syncNoteInfoFromDict(dict)
-    print("AP:syncNoteInfoFromDict", dump_table(dict), dump_table(self.NOTE_INFO))
+    -- print("AP:syncNoteInfoFromDict", dump_table(dict), dump_table(self.NOTE_INFO))
     local goal = tonumber(self.CONNECTION_INFO.slot_data["goal"])
     if goal ~= 16 then
         return
@@ -1763,7 +1774,7 @@ function AP:showPermanentMessage()
                 local playerType = player:GetPlayerType()
                 local playerName = player:GetName()
                 text2 = text2 .. " (" .. self.COMPLETED_NOTES .. "/" .. reqNoteAmount .. ";" .. playerName .. ":" ..
-                            self:countNoteMarksForChar(playerType) .. "/" .. tablelength(self.NOTE_TYPES) .. ")"
+                            self:countNoteMarksForPlayerType(playerType) .. "/" .. tablelength(self.NOTE_TYPES) .. ")"
             end
             Isaac.RenderScaledText(text2, self.HUD_OFFSET, 260 - 10 * 4 * self.INFO_TEXT_SCALE - self.HUD_OFFSET,
                 self.INFO_TEXT_SCALE, self.INFO_TEXT_SCALE, 255, 255, 255, 1)
