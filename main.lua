@@ -25,7 +25,6 @@ AP.STATE_ROOMINFO = "room info"
 AP.STATE_DATAPACKAGE = "datapackage"
 AP.STATE_CONNECTED = "connected"
 AP.STATE_EXIT = "disconnected"
-AP.USE_ITEM_QUEUE = false
 
 AP.ITEM_IMPLS = {
     [78000] = function(ap)
@@ -312,10 +311,15 @@ function AP:init()
     -- mod callbacks
     function self.onPostGameStarted(mod, isContinued)
         print('self.onPostGameStarted')
+        if not isContinued then
+            self.JUST_STARTED = true
+            self.JUST_STARTED_TIMER = 100
+        end
         self.IS_CONTINUED = isContinued
         self.RECONNECT_TRIES = 0
         self.TRAP_QUEUE = {}
         self.TRAP_QUEUE_TIMER = 150
+        self.RECEIVED_QUEUE = {}
         self.STATE_MACHINE:set_state(AP.STATE_CONNECTING)
     end
     function self.onPostRender(mod)
@@ -331,6 +335,7 @@ function AP:init()
         self:advanceSpawnQueue()
     end
     function self.onPreGameExit(mod, shouldSave)
+        self:setPersistentInfoFurthestFloor()
         self.ITEM_QUEUE = {}
         self.TRAP_QUEUE = {}
         self.SPAWN_QUEUE = {}
@@ -583,6 +588,14 @@ function AP:init()
             return
         end
     end
+    function self.onPostNewLevel()
+        local stage = Game():GetLevel():GetStage()
+        if self.FURTHEST_FLOOR < stage then
+            self.FURTHEST_FLOOR = stage
+            self:setPersistentInfoFurthestFloor()
+        end
+        self.ITEM_QUEUE_COUNTER = 0
+    end
     self.MOD_REF:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, self.onPostGameStarted)
     self.MOD_REF:AddCallback(ModCallbacks.MC_POST_RENDER, self.onPostRender)
     self.MOD_REF:AddCallback(ModCallbacks.MC_PRE_GAME_EXIT, self.onPreGameExit)
@@ -590,6 +603,7 @@ function AP:init()
     self.MOD_REF:AddCallback(ModCallbacks.MC_POST_PEFFECT_UPDATE, self.onPostPEffectUpdate)
     self.MOD_REF:AddCallback(ModCallbacks.MC_POST_ENTITY_KILL, self.onPostEntityKill)
     self.MOD_REF:AddCallback(ModCallbacks.MC_PRE_SPAWN_CLEAN_AWARD, self.onPreSpawnClearAward)
+    self.MOD_REF:AddCallback(ModCallbacks.MC_POST_NEW_LEVEL, self.onPostNewLevel)
     print("called AP:init", 3)
     -- global Isaac info
     self.IS_CONTINUED = false
@@ -702,7 +716,11 @@ function AP:init()
     self.ROOM_INFO = nil
     self.MESSAGE_QUEUE = {}
     self.ITEM_QUEUE = {}
-    self.ITEM_QUEUE_TIMER = 0
+    self.ITEM_QUEUE_COUNTER = 0
+    self.ITEM_QUEUE_MAX_PER_FLOOR = 0
+    self.FURTHEST_FLOOR = 1
+    self.JUST_STARTED = false
+    self.JUST_STARTED_TIMER = 0
     self.TRAP_QUEUE = {}
     self.TRAP_QUEUE_TIMER = 0
     self.SPAWN_QUEUE = {}
@@ -832,10 +850,10 @@ end
 function AP:getHintCommand(isLocation, name)
     local text = "!hint"
     if isLocation then
-        text = text.."_location"        
+        text = text .. "_location"
     end
     if name then
-        text = text.." "..name
+        text = text .. " " .. name
     end
     return {
         cmd = "Say",
@@ -1012,6 +1030,35 @@ function AP:setPersistentNoteInfo(note_type, player_type, isHardMode)
     local key = self:getNoteInfoKey(note_type, char)
     self:sendBlocks({self:getSetCommand(key, {self:getDataStorageOperation("replace", 1)}, true, 0)})
 end
+function AP:syncFurthestFloor(dict)
+    local team = tonumber(self.CONNECTION_INFO.team)
+    local slot = tonumber(self.CONNECTION_INFO.slot)
+    local key = "tobir_" .. team .. "_" .. slot .. "_floor"
+    -- print("AP:syncFurthestFloor", dump_table(dict))
+    if dict[key] == nil then
+        return
+    end
+    self.FURTHEST_FLOOR = dict[key]
+    self.ITEM_QUEUE_COUNTER = 0
+    self.ITEM_QUEUE_MAX_PER_FLOOR = math.ceil(#self.ITEM_QUEUE / self.FURTHEST_FLOOR)
+    -- print("AP:syncFurthestFloor", self.FURTHEST_FLOOR, self.ITEM_QUEUE_MAX_PER_FLOOR, #self.ITEM_QUEUE)
+end
+function AP:getPersistentInfoFurthestFloor()
+    -- print("AP:getPersistentInfoFurthestFloor")
+    local team = tonumber(self.CONNECTION_INFO.team)
+    local slot = tonumber(self.CONNECTION_INFO.slot)
+    local key = "tobir_" .. team .. "_" .. slot .. "_floor"
+    self:sendBlocks({self:getGetCommand({key})})
+end
+function AP:setPersistentInfoFurthestFloor(op)
+    if not op then
+        op = "max"
+    end
+    local team = tonumber(self.CONNECTION_INFO.team)
+    local slot = tonumber(self.CONNECTION_INFO.slot)
+    local key = "tobir_" .. team .. "_" .. slot .. "_floor"
+    self:sendBlocks({self:getSetCommand(key, {self:getDataStorageOperation(op, self.FURTHEST_FLOOR)}, true, 1)})
+end
 function AP:generateCollectableItemImpls(startIdx)
     for i = 0, CollectibleType.NUM_COLLECTIBLES - 2 do
         AP.ITEM_IMPLS[startIdx + i] = function(ap)
@@ -1024,7 +1071,7 @@ function AP:clearLocations(amount)
     amount = amount or 1
     local i = 0
     local ids = {}
-    print("clearLocations", 1, i, amount, #self.MISSING_LOCATIONS)
+    -- print("clearLocations", 1, i, amount, #self.MISSING_LOCATIONS)
     while i < amount and #self.MISSING_LOCATIONS > 0 do
         local id = self.MISSING_LOCATIONS[1]
         table.insert(ids, id)
@@ -1082,19 +1129,19 @@ end
 function AP:collectItem(item)
     local id = item.item
     local roomDesc = Game():GetLevel():GetCurrentRoomDesc().Data
-    if roomDesc.Name == "Beast Room" then -- dont receive item in the beast room
+    if roomDesc.Name == "Beast Room" then -- dont receive items in the beast room
         return
     end
-    if AP.USE_ITEM_QUEUE then
+    if self.JUST_STARTED and self.CONNECTION_INFO.slot_data.splitStartItems and self.CONNECTION_INFO.slot_data.splitStartItems > 0 then
         self:addToItemQueue(id)
-    else
-        local item_impl = AP.ITEM_IMPLS[id]
-        if item_impl == nil or type(item_impl) ~= 'function' then
-            print("!!! received unknown item id  !!!", id)
-            return
-        end
-        item_impl(self)
+        return
     end
+    local item_impl = AP.ITEM_IMPLS[id]
+    if item_impl == nil or type(item_impl) ~= 'function' then
+        print("!!! received unknown item id  !!!", id)
+        return
+    end
+    item_impl(self)
 end
 function AP:addToSpawnQueue(type, variant, subType, timeToNextSpawn)
     table.insert(self.SPAWN_QUEUE, {
@@ -1128,23 +1175,34 @@ function AP:advanceSpawnQueue()
     local pos = room:FindFreeTilePosition(room:GetRandomPosition(1), 5)
     Isaac.Spawn(item.type, item.variant, item.subType, pos, Vector(0, 0), nil)
 end
-function AP:advanceItemQueue()
-    if self.ITEM_QUEUE_TIMER > 0 then
-        self.ITEM_QUEUE_TIMER = self.ITEM_QUEUE_TIMER - 1
+function AP:advanceJustStartedTimer()
+    if not self.JUST_STARTED then
         return
     end
+    if self.JUST_STARTED_TIMER <= 0 then
+        self.JUST_STARTED = false
+        return
+    end
+    self.JUST_STARTED_TIMER = self.JUST_STARTED_TIMER - 1
+end
+function AP:advanceItemQueue()
     if #self.ITEM_QUEUE < 1 then
         return
     end
+    if self.ITEM_QUEUE_COUNTER >= self.ITEM_QUEUE_MAX_PER_FLOOR then
+        return
+    end
+    -- print("AP:advanceItemQueue", self.FURTHEST_FLOOR, self.ITEM_QUEUE_COUNTER, self.ITEM_QUEUE_MAX_PER_FLOOR,
+    --  #self.ITEM_QUEUE)
     local id = self.ITEM_QUEUE[1]
     table.remove(self.ITEM_QUEUE, 1)
-    self.ITEM_QUEUE_TIMER = 10
     local item_impl = AP.ITEM_IMPLS[id]
     if item_impl == nil or type(item_impl) ~= 'function' then
         print("!!! received unknown item id  !!!", id)
         return
     end
     item_impl(self)
+    self.ITEM_QUEUE_COUNTER = self.ITEM_QUEUE_COUNTER + 1
 end
 function AP:addToItemQueue(item, pos)
     pos = pos or #self.ITEM_QUEUE + 1
@@ -1259,8 +1317,13 @@ function AP:processBlock(data)
                     self:collectItem(item)
                 end
             end
+            self.JUST_STARTED = false
+            if self.CONNECTION_INFO.slot_data.splitStartItems and self.CONNECTION_INFO.slot_data.splitStartItems == 1 then
+                self.ITEM_QUEUE_MAX_PER_FLOOR = math.ceil(#self.ITEM_QUEUE / 6)
+                -- print("processing ReceivedItems", "calculation ITEM_QUEUE_MAX_PER_FLOOR to be", self.ITEM_QUEUE_MAX_PER_FLOOR)
+            end
         elseif cmd == "SetReply" then
-            print("! got SetReply !", dump_table(block))
+            -- print("! got SetReply !", dump_table(block))
             local key = block.key
             local splitResult = split(key, "_")
             -- print("! got SetReply !", 2, dump_table(splitResult),#splitResult,self.CONNECTION_INFO.team,self.CONNECTION_INFO.slot)
@@ -1268,6 +1331,14 @@ function AP:processBlock(data)
                 -- print("! got SetReply !", 3)
                 if splitResult[1] == "tobir" and tonumber(splitResult[2]) == self.CONNECTION_INFO.team and
                     tonumber(splitResult[3]) == self.CONNECTION_INFO.slot then
+                    if splitResult[4] == "floor" then
+                        -- print("! got SetReply !", 4)
+                        self.FURTHEST_FLOOR = block.value
+                        if self.CONNECTION_INFO.slot_data.splitStartItems and self.CONNECTION_INFO.slot_data.splitStartItems == 2 then
+                            self.ITEM_QUEUE_COUNTER = 0
+                            self.ITEM_QUEUE_MAX_PER_FLOOR = math.ceil(#self.ITEM_QUEUE / self.FURTHEST_FLOOR)
+                        end
+                    end
                     local goal = tonumber(self.CONNECTION_INFO.slot_data["goal"])
                     -- print("! got SetReply !", 4, goal)
                     if goal == 16 and splitResult[4] == "note" and #splitResult >= 6 then
@@ -1327,7 +1398,8 @@ function AP:processBlock(data)
                 parts = {}
             }
             -- ignore own chat messages
-            if not block.type or block.type ~= "Chat" or not block.slot or not self.CONNECTION_INFO or block.slot ~= self.CONNECTION_INFO.slot then 
+            if not block.type or block.type ~= "Chat" or not block.slot or not self.CONNECTION_INFO or block.slot ~=
+                self.CONNECTION_INFO.slot then
                 for _, v in ipairs(block.data) do
                     local text = v.text
                     local color = COLORS.WHITE
@@ -1406,6 +1478,13 @@ function AP:processBlock(data)
             self.LAMB_BODY_KILL = false
             self.SATAN_KILL = false
             self.ITEM_QUEUE = {}
+            self.ITEM_QUEUE_COUNTER = 0
+            self.ITEM_QUEUE_MAX_PER_FLOOR = 0
+            self.FURTHEST_FLOOR = 1
+            self:setPersistentInfoFurthestFloor("default")
+            if self.CONNECTION_INFO.slot_data.splitStartItems and self.CONNECTION_INFO.slot_data.splitStartItems == 2 then
+                self:getPersistentInfoFurthestFloor()
+            end
             self.TRAP_QUEUE = {}
             self.TRAP_QUEUE_TIMER = 150
             local required_locations = tonumber(self.CONNECTION_INFO.slot_data["requiredLocations"])
@@ -1468,6 +1547,7 @@ function AP:processBlock(data)
         elseif cmd == "Retrieved" then
             -- print("! got Retrieved !", dump_table(block))
             self:syncNoteInfoFromDict(block.keys)
+            self:syncFurthestFloor(block.keys)
         elseif cmd == "LocationInfo" then
             -- for _, v in pairs(block.locations) do
             --    local name = self:resolveIdToName("item", v.item)            
