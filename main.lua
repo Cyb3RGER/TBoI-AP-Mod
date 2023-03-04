@@ -441,6 +441,7 @@ function AP:init()
     function self.onPreSpawnClearAward(mod)
         local room = Game():GetRoom()
         local goal = tonumber(self.CONNECTION_INFO.slot_data["goal"])
+        -- print("self.onPreSpawnClearAward", room, goal)
         -- check for boss rush
         if room:GetType() == RoomType.ROOM_BOSSRUSH and room:IsAmbushDone() and room:IsClear() then
             if self.CONNECTION_INFO.slot_data.additionalBossRewards then
@@ -448,7 +449,7 @@ function AP:init()
             end
             if goal == 9 then
                 self:sendGoalReached()
-            elseif goal == 16 then
+            elseif goal == 16 or goal == 17 then
                 self:setPersistentNoteInfo(self.NOTE_TYPES.STAR, Isaac.GetPlayer():GetPlayerType(), self:isHardMode())
             end
         end
@@ -500,7 +501,7 @@ function AP:init()
             self:sendBossClearReward(entity)
         end
         -- we can only win if we check enough locations
-        if #self.CHECKED_LOCATIONS < required_locations and goal ~= 16 then
+        if #self.CHECKED_LOCATIONS < required_locations and goal ~= 16 and goal ~= 17 then
             return
         end
         local bosses = self.GOAL_BOSSES[goal]
@@ -517,7 +518,7 @@ function AP:init()
                 self:sendGoalReached()
             elseif (goal == 5 or goal == 6) and entity.Variant == 1 then
                 self:sendGoalReached()
-            elseif goal == 16 then
+            elseif goal == 16 or goal == 17 then
                 if entity.Variant == 0 then
                     self:setPersistentNoteInfo(self.NOTE_TYPES.CROSS, playerType, isHardMode)
                 elseif entity.Variant == 1 then
@@ -530,7 +531,7 @@ function AP:init()
             if entity.Variant == 10 then
                 if (goal == 2 or goal == 4) then
                     self:sendGoalReached()
-                elseif goal == 16 then
+                elseif goal == 16 or goal == 17 then
                     self:setPersistentNoteInfo(self.NOTE_TYPES.INVERTED_CROSS, playerType, isHardMode)
                 end
             end
@@ -539,7 +540,7 @@ function AP:init()
         elseif self.LAMB_KILL and self.LAMB_BODY_KILL then
             if goal == 5 or goal == 7 then
                 self:sendGoalReached()
-            elseif goal == 16 then
+            elseif goal == 16 or goal == 17 then
                 self:setPersistentNoteInfo(self.NOTE_TYPES.NEGATIVE, playerType, isHardMode)
             end
             return
@@ -554,7 +555,7 @@ function AP:init()
             if entity.Variant == 0 then
                 if goal == 12 then
                     self:sendGoalReached()
-                elseif goal == 16 then
+                elseif goal == 16 or goal == 17 then
                     self:setPersistentNoteInfo(self.NOTE_TYPES.DADS_NOTE, playerType, isHardMode)
                 end
             end
@@ -564,13 +565,13 @@ function AP:init()
             if entity.Variant == 10 then
                 if goal == 13 then
                     self:sendGoalReached()
-                elseif goal == 16 then
+                elseif goal == 16 or goal == 17 then
                     self:setPersistentNoteInfo(self.NOTE_TYPES.KNIFE, playerType, isHardMode)
                 end
             end
             return
         else
-            if goal ~= 16 then
+            if goal ~= 16 and goal ~= 17 then
                 self:sendGoalReached()
             else
                 if type == EntityType.ENTITY_MOMS_HEART then
@@ -628,6 +629,9 @@ function AP:init()
         [15] = {},
         [16] = {EntityType.ENTITY_MOMS_HEART, EntityType.ENTITY_ISAAC, EntityType.ENTITY_SATAN,
                 EntityType.ENTITY_THE_LAMB, EntityType.ENTITY_MEGA_SATAN_2, EntityType.ENTITY_HUSH,
+                EntityType.ENTITY_DOGMA, EntityType.ENTITY_BEAST, EntityType.ENTITY_MOTHER, EntityType.ENTITY_DELIRIUM},
+        [17] = {EntityType.ENTITY_MOMS_HEART, EntityType.ENTITY_ISAAC, EntityType.ENTITY_SATAN,
+                EntityType.ENTITY_THE_LAMB, EntityType.ENTITY_MEGA_SATAN_2, EntityType.ENTITY_HUSH,
                 EntityType.ENTITY_DOGMA, EntityType.ENTITY_BEAST, EntityType.ENTITY_MOTHER, EntityType.ENTITY_DELIRIUM}
     }
     self.GOAL_NAMES = {
@@ -647,7 +651,8 @@ function AP:init()
         [13] = "Mother",
         [14] = "Delirium",
         [15] = "Required locations",
-        [16] = "Full Note(s)"
+        [16] = "Full Note(s)",
+        [17] = "Note Marks"
     }
     self.NOTE_TYPES = {
         HEART = 0,
@@ -730,6 +735,7 @@ function AP:init()
     self.LAST_DEATH_LINK_RECV = nil -- ToDo: Implement?
     self.NOTE_INFO = {}
     self.COMPLETED_NOTES = 0
+    self.COMPLETED_NOTE_MARKS = 0
     print("called AP:init", 4, "end")
 end
 
@@ -939,30 +945,36 @@ end
 function AP:checkNoteInfo()
     -- print("AP:checkNoteInfo", 1, dump_table(self.NOTE_INFO))
     local required_locations = tonumber(self.CONNECTION_INFO.slot_data["requiredLocations"])
-    local noteAmount = tonumber(self.CONNECTION_INFO.slot_data["fullNoteAmount"])
+    local reqNoteAmount = tonumber(self.CONNECTION_INFO.slot_data["fullNoteAmount"])
+    local reqNoteMarksAmount = tonumber(self.CONNECTION_INFO.slot_data["noteMarksAmount"])
     local goal = tonumber(self.CONNECTION_INFO.slot_data["goal"])
-    if goal ~= 16 then
+    if goal ~= 16 and goal ~= 17 then
         return
     end
     local count = 0
+    local countMarks = 0
     for k, v in pairs(self.NOTE_CHARS) do
         if self.NOTE_INFO[k] then
             local complete = true
             for k2, v2 in pairs(self.NOTE_TYPES) do
-                if not self.NOTE_INFO[k][v2] then
-                    complete = false
+                if not self.NOTE_INFO[k][v2] and goal == 16 then
+                    complete = false 
+                    break
+                elseif self.NOTE_INFO[k][v2] and goal == 17 then
+                    countMarks = countMarks + 1
                 end
             end
             if complete then
                 count = count + 1
-                if count >= noteAmount then
+                if count >= reqNoteAmount and goal == 16 then
                     break
                 end
             end
         end
     end
     self.COMPLETED_NOTES = count
-    if count >= noteAmount and #self.CHECKED_LOCATIONS >= required_locations then
+    self.COMPLETED_NOTE_MARKS = countMarks
+    if ((count >= reqNoteAmount and goal == 16) or (countMarks >= reqNoteMarksAmount and goal == 17)) and #self.CHECKED_LOCATIONS >= required_locations then
         self:sendGoalReached()
     end
 end
@@ -979,7 +991,7 @@ end
 function AP:syncNoteInfoFromDict(dict)
     -- print("AP:syncNoteInfoFromDict", dump_table(dict), dump_table(self.NOTE_INFO))
     local goal = tonumber(self.CONNECTION_INFO.slot_data["goal"])
-    if goal ~= 16 then
+    if goal ~= 16 and goal ~= 17 then
         return
     end
     for k, v in pairs(dict) do
@@ -1006,9 +1018,9 @@ function AP:getNoteInfoKey(note_type, char)
     return "tobir_" .. team .. "_" .. slot .. "_note_" .. note_type .. "_" .. char
 end
 function AP:setPersistentNoteInfo(note_type, player_type, isHardMode)
-    -- print("AP:setPersistentNoteInfo", note_type, player_type, isHardMode)
+    print("AP:setPersistentNoteInfo", note_type, player_type, isHardMode)
     local goal = tonumber(self.CONNECTION_INFO.slot_data["goal"])
-    if goal ~= 16 then
+    if goal ~= 16 and goal ~= 17 then
         return
     end
     local noteMarkRequireHardMode = self.CONNECTION_INFO.slot_data["noteMarkRequireHardMode"]
@@ -1341,7 +1353,7 @@ function AP:processBlock(data)
                     end
                     local goal = tonumber(self.CONNECTION_INFO.slot_data["goal"])
                     -- print("! got SetReply !", 4, goal)
-                    if goal == 16 and splitResult[4] == "note" and #splitResult >= 6 then
+                    if (goal == 16 or goal == 17) and splitResult[4] == "note" and #splitResult >= 6 then
                         -- print("! got SetReply !", 5)
                         local note_type = tonumber(splitResult[5])
                         local note_char = tonumber(splitResult[6])
@@ -1502,8 +1514,11 @@ function AP:processBlock(data)
                 if goal == 15 then
                     self:sendGoalReached()
                 end
+                if goal == 16 or goal == 17 then
+                    self:checkNoteInfo()
+                end
             end
-            if goal == 16 then
+            if goal == 16 or goal == 17 then
                 self:setupLocalNoteInfo()
                 self:setupPersistentNoteInfo()
             end
@@ -1844,16 +1859,21 @@ function AP:showPermanentMessage()
         Isaac.RenderScaledText(text, self.HUD_OFFSET, 260 - 10 * 5 * self.INFO_TEXT_SCALE - self.HUD_OFFSET,
             self.INFO_TEXT_SCALE, self.INFO_TEXT_SCALE, 0, 255, 0, 1)
         if self.CONNECTION_INFO then
+            local goal = self.CONNECTION_INFO.slot_data.goal
             local text2 = string.format("%s/%s checked (need %s); next check: %s/%s; goal: %s", #self.CHECKED_LOCATIONS,
                 self.CONNECTION_INFO.slot_data.totalLocations, self.CONNECTION_INFO.slot_data.requiredLocations,
                 self.CUR_ITEM_STEP_VAL, self.CONNECTION_INFO.slot_data.itemPickupStep,
-                self:goalIdToName(self.CONNECTION_INFO.slot_data.goal))
-            if self.CONNECTION_INFO.slot_data.goal == 16 then
-                local reqNoteAmount = tonumber(self.CONNECTION_INFO.slot_data["fullNoteAmount"])
-                local player = Isaac.GetPlayer()
-                local playerType = player:GetPlayerType()
-                local playerName = player:GetName()
+                self:goalIdToName(goal))
+            local player = Isaac.GetPlayer()
+            local playerType = player:GetPlayerType()
+            local playerName = player:GetName()
+            if goal == 16 then
+                local reqNoteAmount = tonumber(self.CONNECTION_INFO.slot_data["fullNoteAmount"])                
                 text2 = text2 .. " (" .. self.COMPLETED_NOTES .. "/" .. reqNoteAmount .. ";" .. playerName .. ":" ..
+                            self:countNoteMarksForPlayerType(playerType) .. "/" .. tablelength(self.NOTE_TYPES) .. ")"
+            elseif goal == 17 then
+                local reqNoteMarks = tonumber(self.CONNECTION_INFO.slot_data["noteMarksAmount"])
+                text2 = text2 .. " (" .. self.COMPLETED_NOTE_MARKS .. "/" .. reqNoteMarks .. ";" .. playerName .. ":" ..
                             self:countNoteMarksForPlayerType(playerType) .. "/" .. tablelength(self.NOTE_TYPES) .. ")"
             end
             Isaac.RenderScaledText(text2, self.HUD_OFFSET, 260 - 10 * 4 * self.INFO_TEXT_SCALE - self.HUD_OFFSET,
