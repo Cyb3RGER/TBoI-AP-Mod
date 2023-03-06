@@ -590,12 +590,15 @@ function AP:init()
         end
     end
     function self.onPostNewLevel()
-        local stage = Game():GetLevel():GetStage()
+        local stage = self:getStageNum()
         if self.FURTHEST_FLOOR < stage then
             self.FURTHEST_FLOOR = stage
             self:setPersistentInfoFurthestFloor()
         end
-        self.ITEM_QUEUE_COUNTER = 0
+        if self.LAST_FLOOR ~= stage then
+            self.LAST_FLOOR = stage
+            self.ITEM_QUEUE_CURRENT_MAX = stage * self.ITEM_QUEUE_MAX_PER_FLOOR
+        end
     end
     self.MOD_REF:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, self.onPostGameStarted)
     self.MOD_REF:AddCallback(ModCallbacks.MC_POST_RENDER, self.onPostRender)
@@ -722,8 +725,10 @@ function AP:init()
     self.MESSAGE_QUEUE = {}
     self.ITEM_QUEUE = {}
     self.ITEM_QUEUE_COUNTER = 0
+    self.ITEM_QUEUE_CURRENT_MAX = 0
     self.ITEM_QUEUE_MAX_PER_FLOOR = 0
     self.FURTHEST_FLOOR = 1
+    self.LAST_FLOOR = 1
     self.JUST_STARTED = false
     self.JUST_STARTED_TIMER = 0
     self.TRAP_QUEUE = {}
@@ -1043,6 +1048,14 @@ function AP:setPersistentNoteInfo(note_type, player_type, isHardMode)
     local key = self:getNoteInfoKey(note_type, char)
     self:sendBlocks({self:getSetCommand(key, {self:getDataStorageOperation("replace", 1)}, true, 0)})
 end
+function AP:getStageNum()
+    local stage = Game():GetLevel():GetStage()
+    -- we hard limit stage num at 12 so home and the void will always receive all items
+    if stage == LevelStage.STAGE8 then
+        stage = 12
+    end
+    return stage
+end
 function AP:syncFurthestFloor(dict)
     local team = tonumber(self.CONNECTION_INFO.team)
     local slot = tonumber(self.CONNECTION_INFO.slot)
@@ -1054,6 +1067,7 @@ function AP:syncFurthestFloor(dict)
     self.FURTHEST_FLOOR = dict[key]
     self.ITEM_QUEUE_COUNTER = 0
     self.ITEM_QUEUE_MAX_PER_FLOOR = math.ceil(#self.ITEM_QUEUE / self.FURTHEST_FLOOR)
+    self.ITEM_QUEUE_CURRENT_MAX = self:getStageNum() * self.ITEM_QUEUE_MAX_PER_FLOOR
     -- print("AP:syncFurthestFloor", self.FURTHEST_FLOOR, self.ITEM_QUEUE_MAX_PER_FLOOR, #self.ITEM_QUEUE)
 end
 function AP:getPersistentInfoFurthestFloor()
@@ -1203,13 +1217,14 @@ function AP:advanceItemQueue()
     if #self.ITEM_QUEUE < 1 then
         return
     end
-    if self.ITEM_QUEUE_COUNTER >= self.ITEM_QUEUE_MAX_PER_FLOOR then
+    if self.ITEM_QUEUE_COUNTER >= self.ITEM_QUEUE_CURRENT_MAX then
         return
     end
-    -- print("AP:advanceItemQueue", self.FURTHEST_FLOOR, self.ITEM_QUEUE_COUNTER, self.ITEM_QUEUE_MAX_PER_FLOOR,
-    --  #self.ITEM_QUEUE)
-    local id = self.ITEM_QUEUE[1]
-    table.remove(self.ITEM_QUEUE, 1)
+    print("AP:advanceItemQueue", self.FURTHEST_FLOOR, self.ITEM_QUEUE_COUNTER, self.ITEM_QUEUE_MAX_PER_FLOOR,
+        self.ITEM_QUEUE_CURRENT_MAX, #self.ITEM_QUEUE)
+    local randIndex = self.RNG:RandomInt(#self.ITEM_QUEUE) + 1
+    local id = self.ITEM_QUEUE[randIndex]
+    table.remove(self.ITEM_QUEUE, randIndex)
     local item_impl = AP.ITEM_IMPLS[id]
     if item_impl == nil or type(item_impl) ~= 'function' then
         print("!!! received unknown item id  !!!", id)
@@ -1245,8 +1260,8 @@ function AP:spawnCollectible(item, forceItem)
     local item_config = Isaac:GetItemConfig():GetCollectible(item)
     -- print("AP:spawnCollectible", player:GetCollectibleCount())
     if (item_config.Type ~= ItemType.ITEM_ACTIVE or player:GetActiveItem(ActiveSlot.SLOT_PRIMARY) == 0) and
-        not (player:GetPlayerType() == PlayerType.PLAYER_ISAAC_B and player:GetCollectibleCount() > 8) 
-        and item ~= CollectibleType.COLLECTIBLE_TMTRAINER then
+        not (player:GetPlayerType() == PlayerType.PLAYER_ISAAC_B and player:GetCollectibleCount() > 8) and item ~=
+        CollectibleType.COLLECTIBLE_TMTRAINER then
         -- FixMe: transformations cause graphical glitches sometimes
         -- player:QueueItem(item_config)        
         -- player:FlushQueueItem()
@@ -1279,10 +1294,10 @@ function AP:spawnRandomCollectibleFromPool(pool)
     self:spawnCollectible(item)
 end
 function AP:spawnRandomPickup()
-    self:spawnRandomPickupByType(PICKUP_TYPES[self.RNG:RandomInt(#PICKUP_TYPES - 1) + 1])
+    self:spawnRandomPickupByType(PICKUP_TYPES[self.RNG:RandomInt(#PICKUP_TYPES) + 1])
 end
 function AP:spawnRandomChest()
-    self:spawnRandomPickupByType(CHEST_TYPES[self.RNG:RandomInt(#CHEST_TYPES - 1) + 1])
+    self:spawnRandomPickupByType(CHEST_TYPES[self.RNG:RandomInt(#CHEST_TYPES) + 1])
 end
 function AP:spawnRandomPickupByType(type, subtype)
     if not subtype then
@@ -1335,6 +1350,7 @@ function AP:processBlock(data)
             self.JUST_STARTED = false
             if self.CONNECTION_INFO.slot_data.splitStartItems and self.CONNECTION_INFO.slot_data.splitStartItems == 1 then
                 self.ITEM_QUEUE_MAX_PER_FLOOR = math.ceil(#self.ITEM_QUEUE / 6)
+                self.ITEM_QUEUE_CURRENT_MAX = self:getStageNum() * self.ITEM_QUEUE_MAX_PER_FLOOR
                 -- print("processing ReceivedItems", "calculation ITEM_QUEUE_MAX_PER_FLOOR to be", self.ITEM_QUEUE_MAX_PER_FLOOR)
             end
         elseif cmd == "SetReply" then
@@ -1353,6 +1369,7 @@ function AP:processBlock(data)
                             self.CONNECTION_INFO.slot_data.splitStartItems == 2 then
                             self.ITEM_QUEUE_COUNTER = 0
                             self.ITEM_QUEUE_MAX_PER_FLOOR = math.ceil(#self.ITEM_QUEUE / self.FURTHEST_FLOOR)
+                            self.ITEM_QUEUE_CURRENT_MAX = self:getStageNum() * self.ITEM_QUEUE_MAX_PER_FLOOR
                         end
                     end
                     local goal = tonumber(self.CONNECTION_INFO.slot_data["goal"])
@@ -1495,8 +1512,12 @@ function AP:processBlock(data)
             self.SATAN_KILL = false
             self.ITEM_QUEUE = {}
             self.ITEM_QUEUE_COUNTER = 0
+            self.ITEM_QUEUE_CURRENT_MAX = 0
             self.ITEM_QUEUE_MAX_PER_FLOOR = 0
             self.FURTHEST_FLOOR = 1
+            self.LAST_FLOOR = 1
+            self.JUST_STARTED = true
+            self.JUST_STARTED_TIMER = 100
             self:setPersistentInfoFurthestFloor("default")
             if self.CONNECTION_INFO.slot_data.splitStartItems and self.CONNECTION_INFO.slot_data.splitStartItems == 2 then
                 self:getPersistentInfoFurthestFloor()

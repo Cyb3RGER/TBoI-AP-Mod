@@ -49,9 +49,7 @@
 - [x] new goal: full note aka all bosses with an extra option for how many chars
   - [x] broken? `fixed!`
 - [ ] docs
-  - [x] add guide to full save file
-  - [ ] test multiplayer
-  - [ ] test mod compatibilty
+  - [x] add guide to full save file  
 - [x] fix AP cache init failure
 - [x] fix Deathlink always set
 - [x] fix price reset on morphing shop item (low price items)
@@ -60,8 +58,10 @@
 - [x] collect button in MCM
 - [x] list hint button in MCM
   - [x] send random item hint button in MCM? => would require item group on AP side as alias??
-- [ ] limit drops per floor as new option
-- [ ] new goal: (certain amount of) note marks
+- [x] limit drops per floor as new option
+  - [x] account for skipping floors
+  - [ ] reconnect spawns items again?
+- [x] new goal: (certain amount of) note marks
 
 ## Maybe Later:
 - [ ] wighting / balancing
@@ -73,3 +73,5 @@
 - [ ] look into graphics glitch on transformations
 - [ ] look into reruns
   - [ ] -> counts as old seed cause isContinued + new seed (?)
+- [ ] test multiplayer
+- [ ] test mod compatibilty
