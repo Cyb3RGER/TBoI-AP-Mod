@@ -958,7 +958,7 @@ function AP:checkNoteInfo()
             local complete = true
             for k2, v2 in pairs(self.NOTE_TYPES) do
                 if not self.NOTE_INFO[k][v2] and goal == 16 then
-                    complete = false 
+                    complete = false
                     break
                 elseif self.NOTE_INFO[k][v2] and goal == 17 then
                     countMarks = countMarks + 1
@@ -974,7 +974,8 @@ function AP:checkNoteInfo()
     end
     self.COMPLETED_NOTES = count
     self.COMPLETED_NOTE_MARKS = countMarks
-    if ((count >= reqNoteAmount and goal == 16) or (countMarks >= reqNoteMarksAmount and goal == 17)) and #self.CHECKED_LOCATIONS >= required_locations then
+    if ((count >= reqNoteAmount and goal == 16) or (countMarks >= reqNoteMarksAmount and goal == 17)) and
+        #self.CHECKED_LOCATIONS >= required_locations then
         self:sendGoalReached()
     end
 end
@@ -1144,7 +1145,8 @@ function AP:collectItem(item)
     if roomDesc.Name == "Beast Room" then -- dont receive items in the beast room
         return
     end
-    if self.JUST_STARTED and self.CONNECTION_INFO.slot_data.splitStartItems and self.CONNECTION_INFO.slot_data.splitStartItems > 0 then
+    if self.JUST_STARTED and self.CONNECTION_INFO.slot_data.splitStartItems and
+        self.CONNECTION_INFO.slot_data.splitStartItems > 0 then
         self:addToItemQueue(id)
         return
     end
@@ -1243,7 +1245,8 @@ function AP:spawnCollectible(item, forceItem)
     local item_config = Isaac:GetItemConfig():GetCollectible(item)
     -- print("AP:spawnCollectible", player:GetCollectibleCount())
     if (item_config.Type ~= ItemType.ITEM_ACTIVE or player:GetActiveItem(ActiveSlot.SLOT_PRIMARY) == 0) and
-        not (player:GetPlayerType() == PlayerType.PLAYER_ISAAC_B and player:GetCollectibleCount() > 8) then
+        not (player:GetPlayerType() == PlayerType.PLAYER_ISAAC_B and player:GetCollectibleCount() > 8) 
+        and item ~= CollectibleType.COLLECTIBLE_TMTRAINER then
         -- FixMe: transformations cause graphical glitches sometimes
         -- player:QueueItem(item_config)        
         -- player:FlushQueueItem()
@@ -1346,7 +1349,8 @@ function AP:processBlock(data)
                     if splitResult[4] == "floor" then
                         -- print("! got SetReply !", 4)
                         self.FURTHEST_FLOOR = block.value
-                        if self.CONNECTION_INFO.slot_data.splitStartItems and self.CONNECTION_INFO.slot_data.splitStartItems == 2 then
+                        if self.CONNECTION_INFO.slot_data.splitStartItems and
+                            self.CONNECTION_INFO.slot_data.splitStartItems == 2 then
                             self.ITEM_QUEUE_COUNTER = 0
                             self.ITEM_QUEUE_MAX_PER_FLOOR = math.ceil(#self.ITEM_QUEUE / self.FURTHEST_FLOOR)
                         end
@@ -1862,13 +1866,12 @@ function AP:showPermanentMessage()
             local goal = self.CONNECTION_INFO.slot_data.goal
             local text2 = string.format("%s/%s checked (need %s); next check: %s/%s; goal: %s", #self.CHECKED_LOCATIONS,
                 self.CONNECTION_INFO.slot_data.totalLocations, self.CONNECTION_INFO.slot_data.requiredLocations,
-                self.CUR_ITEM_STEP_VAL, self.CONNECTION_INFO.slot_data.itemPickupStep,
-                self:goalIdToName(goal))
+                self.CUR_ITEM_STEP_VAL, self.CONNECTION_INFO.slot_data.itemPickupStep, self:goalIdToName(goal))
             local player = Isaac.GetPlayer()
             local playerType = player:GetPlayerType()
             local playerName = player:GetName()
             if goal == 16 then
-                local reqNoteAmount = tonumber(self.CONNECTION_INFO.slot_data["fullNoteAmount"])                
+                local reqNoteAmount = tonumber(self.CONNECTION_INFO.slot_data["fullNoteAmount"])
                 text2 = text2 .. " (" .. self.COMPLETED_NOTES .. "/" .. reqNoteAmount .. ";" .. playerName .. ":" ..
                             self:countNoteMarksForPlayerType(playerType) .. "/" .. tablelength(self.NOTE_TYPES) .. ")"
             elseif goal == 17 then
