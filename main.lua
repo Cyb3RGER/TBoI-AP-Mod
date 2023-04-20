@@ -1,23 +1,22 @@
 local json = require('json')
-local ws_client = require('websocket.client_sync')
-local tools = require('websocket.tools')
-local handshake = require('websocket.handshake')
-local frame = require('websocket.frame')
-local socket = require('socket')
+--local ws_client = require('websocket.client_sync')
+--local tools = require('websocket.tools')
+--local handshake = require('websocket.handshake')
+--local frame = require('websocket.frame')
+--local socket = require('socket')
+--local ap_client = require('lua-apclientpp')
 require('utils')
 require('statemachine')
 require('ap_mcm')
 
 AP = class()
 
+require('ap_client')
+
 AP.INSTANCE = nil
 
 AP.MOD_NAME = "AP Integration"
--- AP client / Mod version 
-AP.MAJOR_VERSION = "0"
-AP.MINOR_VERSION = "2"
-AP.BUILD_VERSION = "0"
-AP.GAME_NAME = "The Binding of Isaac Repentance"
+
 -- State names for stateMachine
 AP.STATE_CONNECTING = "connecting"
 AP.STATE_HANDSHAKE = "handshake"
@@ -229,67 +228,71 @@ function AP:init()
     self.PASSWORD = ""
     self.SLOT_NAME = "Player1"
     -- print("called AP:init", 1.5, self.HOST_ADDRESS, self.HOST_PORT, self.SLOT_NAME, self.PASSWORD)    
-    -- socket / statemachine
+    -- ap client / statemachine
+    self:init_ap_client()
     self.STATE_MACHINE = SimpleStateMachine()
-    -- statemachine callbacks
-    function self.onEnter_Connecting()
-        self.LAST_RECEIVED_ITEM_INDEX = -1
-    end
-    function self.onTick_Connecting()
-        if self.RECONNECT_TRIES >= self.MAX_RECONNECT_TRIES then
-            self:shutdown()
-            return
-        end
-        self.currTime = os.time()
-        if self.lastTime + self.RECONNECT_INTERVAL <= self.currTime then
-            self.lastTime = self.currTime
-            self.socket = ws_client()
-            local ret, err = self.socket:sock_connect(self.HOST_ADDRESS, self.HOST_PORT)
-            if ret == 1 then
-                print('Connection established')
-                self.socket:set_timeout(0)
-                local key = tools.generate_key()
-                local req = handshake.upgrade_request {
-                    key = key,
-                    host = self.HOST_ADDRESS,
-                    port = self.HOST_PORT,
-                    protocols = {'ws'},
-                    origin = '',
-                    uri = 'ws://' .. self.HOST_ADDRESS .. ':' .. self.HOST_PORT
-                }
-                self.socket:sock_send(req)
-                self.STATE_MACHINE:set_state(AP.STATE_HANDSHAKE)
-            else
-                print('Failed to open socket:', err) -- ToDo: show as message
-                self.socket:sock_close()
-                self.socket = nil
-                self.RECONNECT_TRIES = self.RECONNECT_TRIES + 1
-            end
-        end
-    end
-    function self.onTick_Handshake()
-        self:receiveHandshake()
-    end
-    function self.onTick_Connected()
-        self:receive()
-    end
-    function self.onEnter_Connected()
-        self:sendBlocks({self:getConnectCommand()})
-    end
-    function self.onEnter_Datapackage()
-        self:sendBlocks({self:getDataPackageCommand()})
-    end
-    function self.onExit_Connected()
-        self:disconnect()
-    end
-    function self.onEnter_Exit()
-        self:disconnect()
-    end
+    ---- statemachine callbacks
+    --function self.onEnter_Connecting()
+    --    self.LAST_RECEIVED_ITEM_INDEX = -1
+    --end
+    --function self.onTick_Connecting()
+    --    if self.RECONNECT_TRIES >= self.MAX_RECONNECT_TRIES then
+    --        self:shutdown()
+    --        return
+    --    end
+    --    self.currTime = os.time()
+    --    if self.lastTime + self.RECONNECT_INTERVAL <= self.currTime then
+    --        self.lastTime = self.currTime
+    --        self.socket = ws_client()
+    --        local ret, err = self.socket:sock_connect(self.HOST_ADDRESS, self.HOST_PORT)
+    --        if ret == 1 then
+    --            print('Connection established')
+    --            self.socket:set_timeout(0)
+    --            local key = tools.generate_key()
+    --            local req = handshake.upgrade_request {
+    --                key = key,
+    --                host = self.HOST_ADDRESS,
+    --                port = self.HOST_PORT,
+    --                protocols = {'ws'},
+    --                origin = '',
+    --                uri = 'ws://' .. self.HOST_ADDRESS .. ':' .. self.HOST_PORT
+    --            }
+    --            self.socket:sock_send(req)
+    --            self.STATE_MACHINE:set_state(AP.STATE_HANDSHAKE)
+    --        else
+    --            print('Failed to open socket:', err) -- ToDo: show as message
+    --            self.socket:sock_close()
+    --            self.socket = nil
+    --            self.RECONNECT_TRIES = self.RECONNECT_TRIES + 1
+    --        end
+    --    end
+    --end
+    --function self.onTick_Handshake()
+    --    self:receiveHandshake()
+    --end
+    --function self.onTick_Connected()
+    --    self:receive()
+    --end
+    --function self.onEnter_Connected()
+    --    self:sendBlocks({self:getConnectCommand()})
+    --end
+    --function self.onEnter_Datapackage()
+    --    self:sendBlocks({self:getDataPackageCommand()})
+    --end
+    --function self.onExit_Connected()
+    --    self:disconnect()
+    --end
+    --function self.onEnter_Exit()
+    --    self:disconnect()
+    --end
     -- END statemachine callbacks
-    self.STATE_MACHINE:register(AP.STATE_CONNECTING, self.onEnter_Connecting, self.onTick_Connecting, nil)
-    self.STATE_MACHINE:register(AP.STATE_HANDSHAKE, nil, self.onTick_Handshake, nil)
-    self.STATE_MACHINE:register(AP.STATE_ROOMINFO, nil, self.onTick_Connected, nil)
-    self.STATE_MACHINE:register(AP.STATE_DATAPACKAGE, self.onEnter_Datapackage, self.onTick_Connected, nil)
+    function self.onEnter_Connecting()
+        self:connect_ap()
+    end
+    self.STATE_MACHINE:register(AP.STATE_CONNECTING, self.onEnter_Connecting, nil, nil)
+    --self.STATE_MACHINE:register(AP.STATE_HANDSHAKE, nil, self.onTick_Handshake, nil)
+    --self.STATE_MACHINE:register(AP.STATE_ROOMINFO, nil, self.onTick_Connected, nil)
+    --self.STATE_MACHINE:register(AP.STATE_DATAPACKAGE, self.onEnter_Datapackage, self.onTick_Connected, nil)
     self.STATE_MACHINE:register(AP.STATE_CONNECTED, self.onEnter_Connected, self.onTick_Connected, self.onExit_Connected)
     self.STATE_MACHINE:register(AP.STATE_EXIT, self.onEnter_Exit, nil, nil)
     self.RECONNECT_INTERVAL = 5
@@ -323,16 +326,18 @@ function AP:init()
         self.STATE_MACHINE:set_state(AP.STATE_CONNECTING)
     end
     function self.onPostRender(mod)
+        Isaac.DebugString("onPostRender")
+        self.AP_CLIENT:poll()
         self.STATE_MACHINE:tick()
-        self:showPermanentMessage()
-        self:showMessages()
-        if self.DEBUG_MODE then
-            self:showDebugInfo()
-        end
-        self:proceedPickupTimer()
-        self:advanceItemQueue()
-        self:advanceTrapQueue()
-        self:advanceSpawnQueue()
+        --self:showPermanentMessage()
+        --self:showMessages()
+        --if self.DEBUG_MODE then
+        --    self:showDebugInfo()
+        --end
+        --self:proceedPickupTimer()
+        --self:advanceItemQueue()
+        --self:advanceTrapQueue()
+        --self:advanceSpawnQueue()
     end
     function self.onPreGameExit(mod, shouldSave)
         self:setPersistentInfoFurthestFloor()
@@ -744,6 +749,7 @@ function AP:init()
     print("called AP:init", 4, "end")
 end
 
+
 -- AP Commands
 function AP:getConnectCommand()
     return {
@@ -1075,7 +1081,7 @@ function AP:getPersistentInfoFurthestFloor()
     local team = tonumber(self.CONNECTION_INFO.team)
     local slot = tonumber(self.CONNECTION_INFO.slot)
     local key = "tobir_" .. team .. "_" .. slot .. "_floor"
-    self:sendBlocks({self:getGetCommand({key})})
+    self.AP_CLIENT:Get({key})    
 end
 function AP:setPersistentInfoFurthestFloor(op)
     if not op then
@@ -1084,7 +1090,8 @@ function AP:setPersistentInfoFurthestFloor(op)
     local team = tonumber(self.CONNECTION_INFO.team)
     local slot = tonumber(self.CONNECTION_INFO.slot)
     local key = "tobir_" .. team .. "_" .. slot .. "_floor"
-    self:sendBlocks({self:getSetCommand(key, {self:getDataStorageOperation(op, self.FURTHEST_FLOOR)}, true, 1)})
+    self.AP_CLIENT:Set(key, 1, true, {{op, self.FURTHEST_FLOOR}})
+    --self:sendBlocks({self:getSetCommand(key, {self:getDataStorageOperation(op, self.FURTHEST_FLOOR)}, true, 1)})
 end
 function AP:generateCollectableItemImpls(startIdx)
     for i = 0, CollectibleType.NUM_COLLECTIBLES - 2 do
@@ -1497,91 +1504,9 @@ function AP:processBlock(data)
                 self:addMessage(msg)
             end
         elseif cmd == "Connected" then
-            self.RECONNECT_TRIES = 0
-            self.CONNECTION_INFO = block
-            print("Connected", 1, dump_table(self.CONNECTION_INFO.slot_data))
-            print("Connected", 1.5, self.CONNECTION_INFO.slot_data.deathLink)
-            if self.CONNECTION_INFO.slot_data.deathLink and self.CONNECTION_INFO.slot_data.deathLink == 1 then
-                self:sendBlocks({self:getUpdateConnectionTagsCommand({"DeathLink"})})
-            end
-            self.MISSING_LOCATIONS = block.missing_locations
-            self.CHECKED_LOCATIONS = block.checked_locations
-            self.HAS_SEND_GOAL_MSG = false
-            self.LAMB_KILL = false
-            self.LAMB_BODY_KILL = false
-            self.SATAN_KILL = false
-            self.ITEM_QUEUE = {}
-            self.ITEM_QUEUE_COUNTER = 0
-            self.ITEM_QUEUE_CURRENT_MAX = 0
-            self.ITEM_QUEUE_MAX_PER_FLOOR = 0
-            self.FURTHEST_FLOOR = 1
-            self.LAST_FLOOR = 1
-            self.JUST_STARTED = true
-            self.JUST_STARTED_TIMER = 100
-            self:setPersistentInfoFurthestFloor("default")
-            if self.CONNECTION_INFO.slot_data.splitStartItems and self.CONNECTION_INFO.slot_data.splitStartItems == 2 then
-                self:getPersistentInfoFurthestFloor()
-            end
-            self.TRAP_QUEUE = {}
-            self.TRAP_QUEUE_TIMER = 150
-            local required_locations = tonumber(self.CONNECTION_INFO.slot_data["requiredLocations"])
-            local goal = tonumber(self.CONNECTION_INFO.slot_data["goal"])
-            if required_locations and goal and #self.CHECKED_LOCATIONS >= required_locations then
-                if not self.HAS_SEND_GOAL_MSG then
-                    self:addMessage({
-                        parts = {{
-                            msg = "You have collected enough items to beat the game. Goal: " .. self:goalIdToName(goal),
-                            color = COLORS.GREEN
-                        }}
-                    })
-                    self.HAS_SEND_GOAL_MSG = true
-                end
-                if goal == 15 then
-                    self:sendGoalReached()
-                end
-                if goal == 16 or goal == 17 then
-                    self:checkNoteInfo()
-                end
-            end
-            if goal == 16 or goal == 17 then
-                self:setupLocalNoteInfo()
-                self:setupPersistentNoteInfo()
-            end
-            if self.IS_CONTINUED then
-                if not self:loadOtherData(self.CONNECTION_INFO.slot_data.seed) then
-                    self:shutdown()
-                    self:addMessage({
-                        parts = {{
-                            msg = "You are continuing a run of a different slot/game. You have beeen disconnected from the AP server. Please start a new run.",
-                            color = COLORS.RED
-                        }}
-                    })
-                    return
-                end
-            else
-                self.LAST_RECEIVED_ITEM_INDEX = -1
-                self.CUR_ITEM_STEP_VAL = 0
-                self:saveOtherData("")
-            end
+            
         elseif cmd == "RoomInfo" then
-            -- print('!!! got RoomInfo !!!')
-            self.ROOM_INFO = block
-            local games = self.ROOM_INFO.games
-            table.insert(games, "Archipelago")
-            self.OUTDATED_GAMES = deepcopy(games)
-            for _, v in pairs(games) do
-                if self.GAME_DATA and self.GAME_DATA.games and self.GAME_DATA.games[v] and
-                    self.GAME_DATA.games[v].version then
-                    if self.GAME_DATA.games[v].version == self.ROOM_INFO.datapackage_versions[v] then
-                        table.remove(self.OUTDATED_GAMES, findIndex(self.OUTDATED_GAMES, v))
-                    end
-                end
-            end
-            if #self.OUTDATED_GAMES > 0 then
-                self.STATE_MACHINE:set_state(AP.STATE_DATAPACKAGE)
-            else
-                self.STATE_MACHINE:set_state(AP.STATE_CONNECTED)
-            end
+            
         elseif cmd == "InvalidPacket" then
             print("!!! got InvalidPacket !!!", dump_table(block))
         elseif cmd == "Retrieved" then
@@ -1599,7 +1524,7 @@ function AP:processBlock(data)
                     if not contains(self.MISSING_LOCATIONS, v) then
                         table.insert(self.MISSING_LOCATIONS, v)
                     end
-                    local index = findIndex(self.HECKED_LOCATIONS, v)
+                    local index = findIndex(self.CHECKED_LOCATIONS, v)
                     if index ~= nil then
                         table.remove(self.CHECKED_LOCATIONS, index)
                     end
@@ -1987,6 +1912,12 @@ function AP:loadOtherData(seed)
 end
 function AP:saveOtherData(seed)
     local modData = {}
+    Isaac.DebugString("AP:saveOtherData")
+    Isaac.DebugString("AP:saveOtherData"..tostring(self))
+    Isaac.DebugString("AP:saveOtherData"..tostring(self.MOD_REF))
+    Isaac.DebugString("AP:saveOtherData"..tostring(self.MOD_REF:HasData()))
+    Isaac.DebugString("AP:saveOtherData"..tostring(self.MOD_REF:LoadData()))
+    Isaac.DebugString(dump_table(json.decode(self.MOD_REF:LoadData())))
     if self.MOD_REF:HasData() then
         modData = json.decode(self.MOD_REF:LoadData())
     end
@@ -2021,6 +1952,8 @@ function AP:loadGameData()
     self.GAME_DATA = json.decode(encoded)
     self:adjustGameData()
 end
+
+
 
 AP()
 

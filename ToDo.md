@@ -62,6 +62,8 @@
   - [x] account for skipping floors
   - [ ] reconnect spawns items again?
 - [x] new goal: (certain amount of) note marks
+- [ ] option to not connect on run start
+- [ ] AP bum?!
 
 ## Maybe Later:
 - [ ] wighting / balancing
