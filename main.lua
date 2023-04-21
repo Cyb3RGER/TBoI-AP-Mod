@@ -17,14 +17,6 @@ AP.INSTANCE = nil
 
 AP.MOD_NAME = "AP Integration"
 
--- State names for stateMachine
-AP.STATE_CONNECTING = "connecting"
-AP.STATE_HANDSHAKE = "handshake"
-AP.STATE_ROOMINFO = "room info"
-AP.STATE_DATAPACKAGE = "datapackage"
-AP.STATE_CONNECTED = "connected"
-AP.STATE_EXIT = "disconnected"
-
 AP.ITEM_IMPLS = {
     [78000] = function(ap)
         ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_TREASURE)
@@ -175,7 +167,7 @@ AP.TRAP_IMPLS = {
     [78773] = function(ap)
         local level = Game():GetLevel()
         if (level:GetCurrentRoomDesc().Flags & RoomDescriptor.FLAG_CURSED_MIST) ~= RoomDescriptor.FLAG_CURSED_MIST then
-            Game():StartRoomTransition(level:GetRandomRoomIndex(ap.CONNECTION_INFO.slot_data.teleportTrapCanError,
+            Game():StartRoomTransition(level:GetRandomRoomIndex(ap.SLOT_DATA.teleportTrapCanError,
                 ap.RNG:Next()), -1, RoomTransitionAnim.TELEPORT)
         end
     end,
@@ -229,7 +221,7 @@ function AP:init()
     self.SLOT_NAME = "Player1"
     -- print("called AP:init", 1.5, self.HOST_ADDRESS, self.HOST_PORT, self.SLOT_NAME, self.PASSWORD)    
     -- ap client / statemachine
-    self:init_ap_client()
+    self:initAPClient()
     self.STATE_MACHINE = SimpleStateMachine()
     ---- statemachine callbacks
     --function self.onEnter_Connecting()
@@ -286,22 +278,10 @@ function AP:init()
     --    self:disconnect()
     --end
     -- END statemachine callbacks
-    function self.onEnter_Connecting()
-        self:connect_ap()
-    end
-    self.STATE_MACHINE:register(AP.STATE_CONNECTING, self.onEnter_Connecting, nil, nil)
-    --self.STATE_MACHINE:register(AP.STATE_HANDSHAKE, nil, self.onTick_Handshake, nil)
-    --self.STATE_MACHINE:register(AP.STATE_ROOMINFO, nil, self.onTick_Connected, nil)
-    --self.STATE_MACHINE:register(AP.STATE_DATAPACKAGE, self.onEnter_Datapackage, self.onTick_Connected, nil)
-    self.STATE_MACHINE:register(AP.STATE_CONNECTED, self.onEnter_Connected, self.onTick_Connected, self.onExit_Connected)
-    self.STATE_MACHINE:register(AP.STATE_EXIT, self.onEnter_Exit, nil, nil)
     self.RECONNECT_INTERVAL = 5
     self.MAX_RECONNECT_TRIES = 1
     self.RECONNECT_TRIES = 0
-    self.socket = nil
-    self.rxBuf = ''
-    self.currTime = 0
-    self.lastTime = 0
+    self.SHOULD_AUTO_CONNECT = false
     print("called AP:init", 2)
     -- Isaac mod ref
     self.MOD_REF = RegisterMod(self.MOD_NAME, 1)
@@ -313,7 +293,7 @@ function AP:init()
     self:loadSettings()
     -- mod callbacks
     function self.onPostGameStarted(mod, isContinued)
-        print('self.onPostGameStarted')
+        dbg_log('self.onPostGameStarted')
         if not isContinued then
             self.JUST_STARTED = true
             self.JUST_STARTED_TIMER = 100
@@ -323,39 +303,45 @@ function AP:init()
         self.TRAP_QUEUE = {}
         self.TRAP_QUEUE_TIMER = 150
         self.RECEIVED_QUEUE = {}
-        self.STATE_MACHINE:set_state(AP.STATE_CONNECTING)
+        if self.SHOULD_AUTO_CONNECT then
+            self:connectAP()
+        end          
     end
     function self.onPostRender(mod)
-        Isaac.DebugString("onPostRender")
-        self.AP_CLIENT:poll()
+        --dbg_log("onPostRender")`
+        if self.AP_CLIENT then
+            self.AP_CLIENT:poll()    
+        end        
         self.STATE_MACHINE:tick()
-        --self:showPermanentMessage()
-        --self:showMessages()
-        --if self.DEBUG_MODE then
-        --    self:showDebugInfo()
-        --end
-        --self:proceedPickupTimer()
-        --self:advanceItemQueue()
-        --self:advanceTrapQueue()
-        --self:advanceSpawnQueue()
+        self:showPermanentMessage()
+        self:showMessages()
+        if self.DEBUG_MODE then
+            self:showDebugInfo()
+        end
+        self:proceedPickupTimer()
+        self:advanceItemQueue()
+        self:advanceTrapQueue()
+        self:advanceSpawnQueue()
     end
     function self.onPreGameExit(mod, shouldSave)
-        self:setPersistentInfoFurthestFloor()
+        if self.AP_CLIENT and self.AP_CLIENT:get_state() == 4 then
+            self:setPersistentInfoFurthestFloor()    
+        end        
         self.ITEM_QUEUE = {}
         self.TRAP_QUEUE = {}
         self.SPAWN_QUEUE = {}
         if shouldSave then
             local seed = ""
-            if self.CONNECTION_INFO and self.CONNECTION_INFO.slot_data then
-                seed = self.CONNECTION_INFO.slot_data.seed
+            if self.CONNECTION_INFO and self.SLOT_DATA then
+                seed = self.SLOT_DATA.seed
             end
             self:saveOtherData(seed)
         end
-        self:shutdown()
+        self.AP_CLIENT:reset()
     end
     function self.onPrePickupCollision(mod, pickup, collider, low)
-        local totalLocations = self.CONNECTION_INFO.slot_data["totalLocations"]
-        local checkedLocations = #self.CHECKED_LOCATIONS
+        local totalLocations = self.SLOT_DATA.totalLocations
+        local checkedLocations = #self.AP_CLIENT.checked_locations
         local collectableIndex = getCollectableIndex(pickup)
         if pickup.Variant ~= PickupVariant.PICKUP_COLLECTIBLE or collider.Type ~= EntityType.ENTITY_PLAYER or
             checkedLocations >= totalLocations or (pickup.Touched and pickup.SubType ~= self.AP_ITEM_ID) -- used to not make AP spawned item collectable until rerolled
@@ -401,9 +387,9 @@ function AP:init()
         self.PICKUP_TIMER = 90
         if player:CanPickupItem() and pickup.Wait <= 0 and pickup.SubType ~= self.AP_ITEM_ID then
             -- print("onPrePickupCollision", pickup.Wait, pickup.State)
-            local item_step = self.CONNECTION_INFO.slot_data["itemPickupStep"]
+            local item_step = self.SLOT_DATA.itemPickupStep
             self.CUR_ITEM_STEP_VAL = self.CUR_ITEM_STEP_VAL + 1
-            print('item is potential AP item', item_step, self.CUR_ITEM_STEP_VAL, #self.MISSING_LOCATIONS,
+            print('item is potential AP item', item_step, self.CUR_ITEM_STEP_VAL, #self.AP_CLIENT.missing_locations,
                 pickup.SubType, pickup.State)
             if self.CUR_ITEM_STEP_VAL == item_step then
                 -- self:clearLocations(1)                
@@ -445,11 +431,11 @@ function AP:init()
     end
     function self.onPreSpawnClearAward(mod)
         local room = Game():GetRoom()
-        local goal = tonumber(self.CONNECTION_INFO.slot_data["goal"])
+        local goal = tonumber(self.SLOT_DATA.goal)
         -- print("self.onPreSpawnClearAward", room, goal)
         -- check for boss rush
         if room:GetType() == RoomType.ROOM_BOSSRUSH and room:IsAmbushDone() and room:IsClear() then
-            if self.CONNECTION_INFO.slot_data.additionalBossRewards then
+            if self.SLOT_DATA.additionalBossRewards then
                 self:clearLocations(2)
             end
             if goal == 9 then
@@ -462,9 +448,9 @@ function AP:init()
     function self.onPostEntityKill(mod, entity)
         local player = entity:ToPlayer()
         -- ToDo: make send DeathLink on revive a option?
-        if player and self.CONNECTION_INFO.slot_data.deathLink and self.CONNECTION_INFO.slot_data.deathLink == 1 and
+        if player and self.SLOT_DATA.deathLink and self.SLOT_DATA.deathLink == 1 and
             not player:WillPlayerRevive() then
-            self:sendBlocks({self:getDeathLinkBounceCommand()})
+            self:sendDeathLinkBounce()
             self:addMessage({
                 parts = {{
                     msg = "[DeathLink] Sent DeathLink",
@@ -472,8 +458,8 @@ function AP:init()
                 }}
             })
         end
-        local goal = tonumber(self.CONNECTION_INFO.slot_data.goal)
-        local required_locations = tonumber(self.CONNECTION_INFO.slot_data.requiredLocations)
+        local goal = tonumber(self.SLOT_DATA.goal)
+        local required_locations = tonumber(self.SLOT_DATA.requiredLocations)
         local type = entity.Type
         -- print('called entityKill', 1, entity, type, entity.Variant, goal, required_locations, #self.CHECKED_LOCATIONS)
         local isGoalBoss = false
@@ -502,11 +488,11 @@ function AP:init()
                 table.insert(self.KILLED_BOSSES, type)
             end
         end
-        if isGoalBoss and self.CONNECTION_INFO.slot_data.additionalBossRewards then
+        if isGoalBoss and self.SLOT_DATA.additionalBossRewards then
             self:sendBossClearReward(entity)
         end
         -- we can only win if we check enough locations
-        if #self.CHECKED_LOCATIONS < required_locations and goal ~= 16 and goal ~= 17 then
+        if #self.AP_CLIENT.checked_locations < required_locations and goal ~= 16 and goal ~= 17 then
             return
         end
         local bosses = self.GOAL_BOSSES[goal]
@@ -721,10 +707,6 @@ function AP:init()
     -- global AP info
     self.LAST_RECEIVED_ITEM_INDEX = -1
     self.CUR_ITEM_STEP_VAL = 0
-    self.MISSING_LOCATIONS = {}
-    self.CHECKED_LOCATIONS = {}
-    self.GAME_DATA = nil
-    self:loadGameData()
     self.CONNECTION_INFO = nil
     self.ROOM_INFO = nil
     self.MESSAGE_QUEUE = {}
@@ -774,12 +756,6 @@ function AP:getDataPackageCommand()
         games = self.OUTDATED_GAMES
     }
 end
-function AP:getGoalReachedCommand()
-    return {
-        cmd = "StatusUpdate",
-        status = 30 -- CLIENT_GOAL
-    }
-end
 function AP:getLocationCollectedCommand(ids)
     return {
         cmd = "LocationChecks",
@@ -794,22 +770,6 @@ function AP:getLocationScoutCommand(ids, create_as_hint)
         cmd = "LocationScouts",
         locations = ids,
         create_as_hint = create_as_hint
-    }
-end
-function AP:getDeathLinkBounceCommand(cause, source)
-    cause = cause or AP.GAME_NAME
-    source = source or self.SLOT_NAME -- ToDo: append player number
-    local time = socket.gettime()
-    self.LAST_DEATH_LINK_TIME = time
-    -- print("AP:getDeathLinkBounceCommand", time, self.LAST_DEATH_LINK_TIME)
-    return {
-        cmd = "Bounce",
-        tags = {"DeathLink"},
-        data = {
-            time = time,
-            cause = cause,
-            source = source
-        }
     }
 end
 function AP:getUpdateConnectionTagsCommand(tags)
@@ -831,12 +791,7 @@ function AP:getSetCommand(key, operations, want_reply, default)
         operations = operations
     }
 end
-function AP:getDataStorageOperation(op, value)
-    return {
-        operation = op,
-        value = value
-    }
-end
+
 function AP:getSetNotifyCommand(keys)
     return {
         cmd = "SetNotify",
@@ -850,63 +805,10 @@ function AP:getGetCommand(keys)
         keys = keys
     }
 end
-function AP:getCollectCommand()
-    return {
-        cmd = "Say",
-        text = "!collect"
-    }
-
-end
-function AP:getReleaseCommand()
-    return {
-        cmd = "Say",
-        text = "!release"
-    }
-
-end
-function AP:getHintCommand(isLocation, name)
-    local text = "!hint"
-    if isLocation then
-        text = text .. "_location"
-    end
-    if name then
-        text = text .. " " .. name
-    end
-    return {
-        cmd = "Say",
-        text = text
-    }
-
-end
 -- AP END Commands
 
 -- AP util funcs
-function AP:collectSlot()
-    if (self.STATE_MACHINE:get_state() ~= self.STATE_CONNECTED and self.ROOM_INFO.permission.collect == 0) then
-        self:addMessage({
-            parts = {{
-                msg = "You can not collect! (not connected or no permission)",
-                color = COLORS.RED
-            }}
-        })
-        return
-    end
-    self:sendBlocks({self:getCollectCommand()})
-end
-function AP:releaseSlot()
-    if (self.STATE_MACHINE:get_state() ~= self.STATE_CONNECTED and self.ROOM_INFO.permission.release == 0) then
-        self:addMessage({
-            parts = {{
-                msg = "You can not release! (not connected or no permission)",
-                color = COLORS.RED
-            }}
-        })
-    end
-    self:sendBlocks({self:getReleaseCommand()})
-end
-function AP:sendHintCommand(isLocation, name)
-    self:sendBlocks({self:getHintCommand(isLocation, name)})
-end
+
 function AP:getTypeFromDataStorageKey(k)
     -- print("AP:getTypeFromDataStorageKey")
     local type = "invalid"
@@ -955,10 +857,10 @@ function AP:countNoteMarksForPlayerType(player_type)
 end
 function AP:checkNoteInfo()
     -- print("AP:checkNoteInfo", 1, dump_table(self.NOTE_INFO))
-    local required_locations = tonumber(self.CONNECTION_INFO.slot_data["requiredLocations"])
-    local reqNoteAmount = tonumber(self.CONNECTION_INFO.slot_data["fullNoteAmount"])
-    local reqNoteMarksAmount = tonumber(self.CONNECTION_INFO.slot_data["noteMarksAmount"])
-    local goal = tonumber(self.CONNECTION_INFO.slot_data["goal"])
+    local required_locations = tonumber(self.SLOT_DATA.requiredLocations)
+    local reqNoteAmount = tonumber(self.SLOT_DATA.fullNoteAmount)
+    local reqNoteMarksAmount = tonumber(self.SLOT_DATA.noteMarksAmount)
+    local goal = tonumber(self.SLOT_DATA.goal)
     if goal ~= 16 and goal ~= 17 then
         return
     end
@@ -986,7 +888,7 @@ function AP:checkNoteInfo()
     self.COMPLETED_NOTES = count
     self.COMPLETED_NOTE_MARKS = countMarks
     if ((count >= reqNoteAmount and goal == 16) or (countMarks >= reqNoteMarksAmount and goal == 17)) and
-        #self.CHECKED_LOCATIONS >= required_locations then
+        #self.AP_CLIENT.checked_locations >= required_locations then
         self:sendGoalReached()
     end
 end
@@ -998,11 +900,12 @@ function AP:setupPersistentNoteInfo()
             table.insert(keys, self:getNoteInfoKey(v, k2))
         end
     end
-    self:sendBlocks({self:getGetCommand(keys), self:getSetNotifyCommand(keys)})
+    self.AP_CLIENT:Get(keys)
+    self.AP_CLIENT:SetNotify(keys)    
 end
 function AP:syncNoteInfoFromDict(dict)
     -- print("AP:syncNoteInfoFromDict", dump_table(dict), dump_table(self.NOTE_INFO))
-    local goal = tonumber(self.CONNECTION_INFO.slot_data["goal"])
+    local goal = tonumber(self.SLOT_DATA.goal)
     if goal ~= 16 and goal ~= 17 then
         return
     end
@@ -1031,11 +934,11 @@ function AP:getNoteInfoKey(note_type, char)
 end
 function AP:setPersistentNoteInfo(note_type, player_type, isHardMode)
     print("AP:setPersistentNoteInfo", note_type, player_type, isHardMode)
-    local goal = tonumber(self.CONNECTION_INFO.slot_data["goal"])
+    local goal = tonumber(self.SLOT_DATA.goal)
     if goal ~= 16 and goal ~= 17 then
         return
     end
-    local noteMarkRequireHardMode = self.CONNECTION_INFO.slot_data["noteMarkRequireHardMode"]
+    local noteMarkRequireHardMode = self.SLOT_DATA.noteMarkRequireHardMode
     -- print("AP:setPersistentNoteInfo", 2, noteMarkRequireHardMode)
     if noteMarkRequireHardMode and not isHardMode then
         return
@@ -1052,7 +955,7 @@ function AP:setPersistentNoteInfo(note_type, player_type, isHardMode)
         return
     end
     local key = self:getNoteInfoKey(note_type, char)
-    self:sendBlocks({self:getSetCommand(key, {self:getDataStorageOperation("replace", 1)}, true, 0)})
+    self.AP_CLIENT:Set(key, 0, true, {{"replace", 1}})
 end
 function AP:getStageNum()
     local stage = Game():GetLevel():GetStage()
@@ -1090,8 +993,7 @@ function AP:setPersistentInfoFurthestFloor(op)
     local team = tonumber(self.CONNECTION_INFO.team)
     local slot = tonumber(self.CONNECTION_INFO.slot)
     local key = "tobir_" .. team .. "_" .. slot .. "_floor"
-    self.AP_CLIENT:Set(key, 1, true, {{op, self.FURTHEST_FLOOR}})
-    --self:sendBlocks({self:getSetCommand(key, {self:getDataStorageOperation(op, self.FURTHEST_FLOOR)}, true, 1)})
+    self.AP_CLIENT:Set(key, 1, true, {{op, self.FURTHEST_FLOOR}})    
 end
 function AP:generateCollectableItemImpls(startIdx)
     for i = 0, CollectibleType.NUM_COLLECTIBLES - 2 do
@@ -1103,17 +1005,13 @@ function AP:generateCollectableItemImpls(startIdx)
 end
 function AP:clearLocations(amount)
     amount = amount or 1
-    local i = 0
-    local ids = {}
-    -- print("clearLocations", 1, i, amount, #self.MISSING_LOCATIONS)
-    while i < amount and #self.MISSING_LOCATIONS > 0 do
-        local id = self.MISSING_LOCATIONS[1]
-        table.insert(ids, id)
-        table.remove(self.MISSING_LOCATIONS, 1)
-        table.insert(self.CHECKED_LOCATIONS, id)
-        i = i + 1
-    end
-    self:sendBlocks({self:getLocationCollectedCommand(ids)})
+    if amount > #self.AP_CLIENT.missing_locations then
+        amount = #self.AP_CLIENT.missing_locations
+    end    
+    local ids = {}    
+    table.move(self.AP_CLIENT.missing_locations,1,amount,1,ids)
+    dbg_log("clearLocations"..dump_table(ids).." "..tostring(amount).." "..tostring(#self.AP_CLIENT.missing_locations))
+    self:sendLocationsCleared(ids)
 end
 function AP:sendBossClearReward(entity)
     local type = entity.Type
@@ -1142,32 +1040,15 @@ function AP:sendBossClearReward(entity)
         print("!!! tried to send clear reward for unknown goal boss !!!")
     end
 end
-function AP:resolveIdToName(typeStr, id)
-    if string.find(typeStr, "location") then
-        if type(id) == "string" then
-            id = tonumber(id)
-        end
-        return self.GAME_DATA.location_id_to_name[id]
-    elseif string.find(typeStr, "item") then
-        if type(id) == "string" then
-            id = tonumber(id)
-        end
-        return self.GAME_DATA.item_id_to_name[id]
-    elseif string.find(typeStr, "player") then
-        return self.CONNECTION_INFO.slot_info[id].name -- ToDo: alias via players?
-    else
-        print('!!! can to resolve Id to Name of unknown type !!!', typeStr)
-        return id
-    end
-end
+
 function AP:collectItem(item)
     local id = item.item
     local roomDesc = Game():GetLevel():GetCurrentRoomDesc().Data
     if roomDesc.Name == "Beast Room" then -- dont receive items in the beast room
         return
     end
-    if self.JUST_STARTED and self.CONNECTION_INFO.slot_data.splitStartItems and
-        self.CONNECTION_INFO.slot_data.splitStartItems > 0 then
+    if self.JUST_STARTED and self.SLOT_DATA.splitStartItems and
+        self.SLOT_DATA.splitStartItems > 0 then
         self:addToItemQueue(id)
         return
     end
@@ -1325,17 +1206,6 @@ function AP:spawnRandomPickupByType(type, subtype)
 end
 -- END AP util funcs
 
-function AP:DebugString(...)
-    local string = ""
-    for i, v in ipairs(arg) do
-        string = string .. tostring(v)
-        if i ~= #arg then
-            string = string .. '\t'
-        end
-    end
-    Isaac.DebugString(string)
-end
-
 -- AP connection handling
 function AP:processBlock(data)
     local blocks = json.decode(data)
@@ -1348,161 +1218,17 @@ function AP:processBlock(data)
         local cmd = block.cmd
         print('processing block', cmd)
         if cmd == "ReceivedItems" then
-            if block.index > self.LAST_RECEIVED_ITEM_INDEX then
-                self.LAST_RECEIVED_ITEM_INDEX = block.index
-                for _, item in ipairs(block.items) do
-                    self:collectItem(item)
-                end
-            end
-            self.JUST_STARTED = false
-            if self.CONNECTION_INFO.slot_data.splitStartItems and self.CONNECTION_INFO.slot_data.splitStartItems == 1 then
-                self.ITEM_QUEUE_MAX_PER_FLOOR = math.ceil(#self.ITEM_QUEUE / 6)
-                self.ITEM_QUEUE_CURRENT_MAX = self:getStageNum() * self.ITEM_QUEUE_MAX_PER_FLOOR
-                -- print("processing ReceivedItems", "calculation ITEM_QUEUE_MAX_PER_FLOOR to be", self.ITEM_QUEUE_MAX_PER_FLOOR)
-            end
+            
         elseif cmd == "SetReply" then
             -- print("! got SetReply !", dump_table(block))
-            local key = block.key
-            local splitResult = split(key, "_")
-            -- print("! got SetReply !", 2, dump_table(splitResult),#splitResult,self.CONNECTION_INFO.team,self.CONNECTION_INFO.slot)
-            if #splitResult >= 4 then
-                -- print("! got SetReply !", 3)
-                if splitResult[1] == "tobir" and tonumber(splitResult[2]) == self.CONNECTION_INFO.team and
-                    tonumber(splitResult[3]) == self.CONNECTION_INFO.slot then
-                    if splitResult[4] == "floor" then
-                        -- print("! got SetReply !", 4)
-                        self.FURTHEST_FLOOR = block.value
-                        if self.CONNECTION_INFO.slot_data.splitStartItems and
-                            self.CONNECTION_INFO.slot_data.splitStartItems == 2 then
-                            self.ITEM_QUEUE_COUNTER = 0
-                            self.ITEM_QUEUE_MAX_PER_FLOOR = math.ceil(#self.ITEM_QUEUE / self.FURTHEST_FLOOR)
-                            self.ITEM_QUEUE_CURRENT_MAX = self:getStageNum() * self.ITEM_QUEUE_MAX_PER_FLOOR
-                        end
-                    end
-                    local goal = tonumber(self.CONNECTION_INFO.slot_data["goal"])
-                    -- print("! got SetReply !", 4, goal)
-                    if (goal == 16 or goal == 17) and splitResult[4] == "note" and #splitResult >= 6 then
-                        -- print("! got SetReply !", 5)
-                        local note_type = tonumber(splitResult[5])
-                        local note_char = tonumber(splitResult[6])
-                        if not self.NOTE_INFO[note_char] then
-                            self.NOTE_INFO[note_char] = {}
-                        end
-                        self.NOTE_INFO[note_char][note_type] = (block.value == 1)
-                        self:checkNoteInfo()
-                    end
-                end
-            end
+            
         elseif cmd == "Bounced" then
             -- print(dump_table(block))
-            if block.tags and contains(block.tags, "DeathLink") and block.data then
-                -- print(self.LAST_DEATH_LINK_TIME, block.data.time)
-                if self.LAST_DEATH_LINK_TIME ~= nil and tostring(self.LAST_DEATH_LINK_TIME) == tostring(block.data.time) then
-                    -- our own package -> Do nothing
-                else
-                    local player = Game():GetNearestPlayer(Isaac.GetRandomPosition())
-                    player:Die()
-                    local cause = block.data.cause or "unknown"
-                    local source = block.data.source or "unknown"
-                    self:addMessage({
-                        parts = {{
-                            msg = "[DeathLink] Killed by " .. source .. ". Reason: " .. cause,
-                            color = COLORS.RED
-                        }}
-                    })
-                    self.LAST_DEATH_LINK_RECV = block.data.time
-                end
-            end
+            
         elseif cmd == "ConnectionRefused" then
-            local errsMsgs = ""
-            if block.errors then
-                errsMsgs = " Reason(s): "
-                for i, v in ipairs(block.errors) do
-                    errsMsgs = errsMsgs .. v
-                    if i ~= #block.errors then
-                        errsMsgs = errsMsgs .. ", "
-                    end
-                end
-            end
-            print("Connection refused by AP Server." .. errsMsgs)
-            self:addMessage({
-                parts = {{
-                    msg = "Connection refused by AP Server." .. errsMsgs,
-                    color = COLORS.RED
-                }}
-            })
-            self.RECONNECT_TRIES = self.RECONNECT_TRIES + 1
-            self:reconnect()
+            
         elseif cmd == "PrintJSON" then
-            local msg = {
-                parts = {}
-            }
-            -- ignore own chat messages
-            if not block.type or block.type ~= "Chat" or not block.slot or not self.CONNECTION_INFO or block.slot ~=
-                self.CONNECTION_INFO.slot then
-                for _, v in ipairs(block.data) do
-                    local text = v.text
-                    local color = COLORS.WHITE
-                    if not v.type or v.type == "text" then
-                        -- nothing to do                
-                    elseif v.type == "player_id" then
-                        text = self:resolveIdToName(v.type, v.text)
-                        color = COLORS.BLUE
-                    elseif v.type == "player_name" then
-                        color = COLORS.BLUE
-                    elseif v.type == "item_id" then
-                        text = self:resolveIdToName(v.type, v.text)
-                        if v.flags & 4 == 4 then
-                            color = COLORS.RED
-                        elseif v.flags & 2 == 2 or v.flags & 1 == 1 then
-                            color = COLORS.GREEN
-                        else
-                            color = COLORS.YELLOW
-                        end
-                    elseif v.type == "item_name" then
-                        if v.flags | 4 == 4 then
-                            color = COLORS.RED
-                        elseif v.flags | 2 == 2 or v.flags | 1 == 1 then
-                            color = COLORS.YELLOW
-                        else
-                            color = COLORS.GREEN
-                        end
-                    elseif v.type == "location_id" then
-                        text = self:resolveIdToName(v.type, v.text)
-                        color = COLORS.MAGENTA
-                    elseif v.type == "location_name" then
-                        color = COLORS.MAGENTA
-                    elseif v.type == "entrance_name" then
-                        color = COLORS.CYAN
-                    elseif v.type == "color" then
-                        if v.color == "black" then
-                            color = COLORS.BLACK
-                        elseif v.color == "white" then
-                            color = COLORS.WHITE
-                        elseif v.color == "red" then
-                            color = COLORS.RED
-                        elseif v.color == "green" then
-                            color = COLORS.GREEN
-                        elseif v.color == "blue" then
-                            color = COLORS.BLUE
-                        elseif v.color == "magenta" then
-                            color = COLORS.MAGENTA
-                        elseif v.color == "cyan" then
-                            color = COLORS.CYAN
-                        end
-                    end
-                    if not text then
-                        text = ""
-                    end
-                    local part = {
-                        msg = text,
-                        color = color,
-                        width = Isaac.GetTextWidth(text)
-                    }
-                    table.insert(msg.parts, part)
-                end
-                self:addMessage(msg)
-            end
+                        
         elseif cmd == "Connected" then
             
         elseif cmd == "RoomInfo" then
@@ -1511,185 +1237,40 @@ function AP:processBlock(data)
             print("!!! got InvalidPacket !!!", dump_table(block))
         elseif cmd == "Retrieved" then
             -- print("! got Retrieved !", dump_table(block))
-            self:syncNoteInfoFromDict(block.keys)
-            self:syncFurthestFloor(block.keys)
+            
         elseif cmd == "LocationInfo" then
             -- for _, v in pairs(block.locations) do
             --    local name = self:resolveIdToName("item", v.item)            
             --    local player = self:resolveIdToName("player", tostring(v.player))   
             -- end
         elseif cmd == "RoomUpdate" then
-            if block.missing_location then
-                for _, v in ipairs(block.missing_location) do
-                    if not contains(self.MISSING_LOCATIONS, v) then
-                        table.insert(self.MISSING_LOCATIONS, v)
-                    end
-                    local index = findIndex(self.CHECKED_LOCATIONS, v)
-                    if index ~= nil then
-                        table.remove(self.CHECKED_LOCATIONS, index)
-                    end
-                end
-            end
-            if block.checked_locations then
-                for _, v in ipairs(block.checked_locations) do
-                    if not contains(self.CHECKED_LOCATIONS, v) then
-                        table.insert(self.CHECKED_LOCATIONS, v)
-                    end
-                    local index = findIndex(self.MISSING_LOCATIONS, v)
-                    if index ~= nil then
-                        table.remove(self.MISSING_LOCATIONS, index)
-                    end
-                end
-                local required_locations = tonumber(self.CONNECTION_INFO.slot_data["requiredLocations"])
-                local goal = tonumber(self.CONNECTION_INFO.slot_data["goal"])
-                if required_locations and goal and #self.CHECKED_LOCATIONS >= required_locations then
-                    if not self.HAS_SEND_GOAL_MSG then
-                        self:addMessage({
-                            parts = {{
-                                msg = "You have collected enough items to beat the game. Goal: " ..
-                                    self:goalIdToName(goal),
-                                color = COLORS.GREEN
-                            }}
-                        })
-                        self.HAS_SEND_GOAL_MSG = true
-                    end
-                    if goal == 15 then
-                        self:sendGoalReached()
-                    end
-                end
-            end
+            -- if block.missing_location then
+            --     for _, v in ipairs(block.missing_location) do
+            --         if not contains(self.MISSING_LOCATIONS, v) then
+            --             table.insert(self.MISSING_LOCATIONS, v)
+            --         end
+            --         local index = findIndex(self.CHECKED_LOCATIONS, v)
+            --         if index ~= nil then
+            --             table.remove(self.CHECKED_LOCATIONS, index)
+            --         end
+            --     end
+            -- end
+            -- if block.checked_locations then
+            --     for _, v in ipairs(block.checked_locations) do
+            --         if not contains(self.CHECKED_LOCATIONS, v) then
+            --             table.insert(self.CHECKED_LOCATIONS, v)
+            --         end
+            --         local index = findIndex(self.MISSING_LOCATIONS, v)
+            --         if index ~= nil then
+            --             table.remove(self.MISSING_LOCATIONS, index)
+            --         end
+            --     end                
+            -- end
         elseif cmd == "DataPackage" then
-            if self.GAME_DATA == nil then
-                self.GAME_DATA = {}
-            end
-            if self.GAME_DATA.games == nil then
-                self.GAME_DATA.games = {}
-            end
-            for k, v in pairs(block.data.games) do
-                self.GAME_DATA.games[k] = block.data.games[k]
-            end
-            self:adjustGameData()
-            self:saveGameData()
-            self.STATE_MACHINE:set_state(AP.STATE_CONNECTED)
         else
             print("! dropping packet: unhandled cmd " .. cmd .. " !")
         end
     end
-end
-function AP:adjustGameData()
-    if self.GAME_DATA == nil then
-        return
-    end
-    if self.GAME_DATA.games == nil and tablelength(self.GAME_DATA.games) > 0 then
-        return
-    end
-    self.GAME_DATA.item_id_to_name = {}
-    self.GAME_DATA.location_id_to_name = {}
-    self.GAME_DATA.item_name_to_id = {}
-    self.GAME_DATA.location_name_to_id = {}
-    for k, v in pairs(self.GAME_DATA.games) do
-        v.item_id_to_name = {}
-        v.location_id_to_name = {}
-        for k2, v2 in pairs(v.item_name_to_id) do
-            self.GAME_DATA.item_name_to_id[k2] = v2
-            self.GAME_DATA.item_id_to_name[v2] = k2
-            v.item_id_to_name[v2] = k2
-        end
-        for k2, v2 in pairs(v.location_name_to_id) do
-            self.GAME_DATA.location_name_to_id[k2] = v2
-            self.GAME_DATA.location_id_to_name[v2] = k2
-            v.location_id_to_name[v2] = k2
-        end
-    end
-end
-function AP:processHandshake(data)
-    -- print('processHandshake: ', data)
-    self.STATE_MACHINE:set_state(AP.STATE_ROOMINFO)
-end
-function AP:sendBlocks(blocks)
-    local data = json.encode(blocks) .. "\r\n"
-    -- print('send', data)
-    local encoded = frame.encode(data, frame.TEXT, true)
-    local ret, err = self.socket:sock_send(encoded)
-    if err ~= nil and err ~= 'timeout' then
-        print('Connection lost:', err)
-        self:reconnect()
-    end
-end
-function AP:receiveHandshake()
-    local start = socket.gettime()
-    local data, err = self.socket:sock_receive(1)
-    if data ~= nil then
-        self.rxBuf = self.rxBuf .. data
-        while true do
-            data, err = self.socket:sock_receive(1)
-            if err ~= nil and err ~= 'timeout' then
-                print('Connection lost:', err)
-                self.rxBuf = ''
-                self:reconnect()
-                return
-            end
-            if data ~= nil then
-                self.rxBuf = self.rxBuf .. data
-            end
-            -- print('AP:receiveHandshake', self.rxBuf)        
-            if #self.rxBuf > 4 and string.sub(self.rxBuf, -4) == "\r\n\r\n" then
-                local result = self.rxBuf
-                self.rxBuf = ''
-                -- print('received data', result)                
-                self:processHandshake(result)
-                return
-            end
-        end
-    end
-end
-function AP:receiveBlock()
-    local n = self.expected_bytes or 1
-    while true do
-        local data, err, partial = self.socket:sock_receive(n)
-        data = data or partial
-        -- print('AP:receiveBlock', 0, data, partial, not partial or #partial, err)
-        if err == "timeout" then
-            if partial then
-                self.rxBuf = self.rxBuf .. partial
-                self.expected_bytes = n - #partial
-            end
-            return nil
-        end
-        if data == nil then
-            self:reconnect()
-            self.rxBuf = ''
-            self.expected_bytes = 1
-            return nil
-        end
-        self.rxBuf = self.rxBuf .. data
-        -- print('AP:receiveBlock', 1, self.rxBuf, #self.rxBuf, n, data == nil, string.byte(data))
-        local decoded, fin, opcode, rest, mask = frame.decode(self.rxBuf)
-        -- print('AP:receiveBlock', 2, decoded, fin, opcode, rest, mask)
-        if decoded ~= nil then
-            self.socket:set_timeout(0)
-            -- print('received data')
-            self.rxBuf = ''
-            self.expected_bytes = 1
-            return decoded
-        else
-            -- print('AP:receiveBlock', 3, toint(fin), n)
-            n = math.floor(fin)
-            self.expected_bytes = n
-        end
-    end
-end
-function AP:receive()
-    local block = self:receiveBlock()
-    if block ~= nil then
-        self:processBlock(block)
-    end
-end
-function AP:connect()
-    if self.STATE_MACHINE:get_state() ~= AP.STATE_EXIT then
-        self:shutdown()
-    end
-    self:reconnect()
 end
 function AP:reconnect()
     -- if self.STATE_MACHINE:get_state() ~= AP.STATE_EXIT then
@@ -1709,13 +1290,11 @@ function AP:disconnect()
         self.socket = nil
     end
 end
-function AP:shutdown()
-    self.STATE_MACHINE:set_state(AP.STATE_EXIT)
-end
 -- END AP connection handling
 
 -- AP message printing
 function AP:addMessage(msg)
+    dbg_log("AP:addMessage")
     if not msg then
         return
     end
@@ -1797,31 +1376,31 @@ end
 
 -- mod callback util funcs
 function AP:showPermanentMessage()
-    local state = self.STATE_MACHINE:get_state()
+    local state = self:getAPState()
     if state == nil then
         state = "! UNKNOWN STATE !"
     end
     local text = "AP: " .. state
-    if state == AP.STATE_EXIT then
+    if state == AP.STATES[0] then
         Isaac.RenderScaledText(text, self.HUD_OFFSET, 260 - 10 * 5 * self.INFO_TEXT_SCALE - self.HUD_OFFSET,
             self.INFO_TEXT_SCALE, self.INFO_TEXT_SCALE, 255, 0, 0, 1)
-    elseif state == AP.STATE_CONNECTED then
+    elseif state == AP.STATES[4] then
         Isaac.RenderScaledText(text, self.HUD_OFFSET, 260 - 10 * 5 * self.INFO_TEXT_SCALE - self.HUD_OFFSET,
             self.INFO_TEXT_SCALE, self.INFO_TEXT_SCALE, 0, 255, 0, 1)
-        if self.CONNECTION_INFO then
-            local goal = self.CONNECTION_INFO.slot_data.goal
-            local text2 = string.format("%s/%s checked (need %s); next check: %s/%s; goal: %s", #self.CHECKED_LOCATIONS,
-                self.CONNECTION_INFO.slot_data.totalLocations, self.CONNECTION_INFO.slot_data.requiredLocations,
-                self.CUR_ITEM_STEP_VAL, self.CONNECTION_INFO.slot_data.itemPickupStep, self:goalIdToName(goal))
+        if self.CONNECTION_INFO and self.SLOT_DATA then
+            local goal = self.SLOT_DATA.goal
+            local text2 = string.format("%s/%s checked (need %s); next check: %s/%s; goal: %s", #self.AP_CLIENT.checked_locations,
+                self.SLOT_DATA.totalLocations, self.SLOT_DATA.requiredLocations,
+                self.CUR_ITEM_STEP_VAL, self.SLOT_DATA.itemPickupStep, self:goalIdToName(goal))
             local player = Isaac.GetPlayer()
             local playerType = player:GetPlayerType()
             local playerName = player:GetName()
             if goal == 16 then
-                local reqNoteAmount = tonumber(self.CONNECTION_INFO.slot_data["fullNoteAmount"])
+                local reqNoteAmount = tonumber(self.SLOT_DATA.fullNoteAmount)
                 text2 = text2 .. " (" .. self.COMPLETED_NOTES .. "/" .. reqNoteAmount .. ";" .. playerName .. ":" ..
                             self:countNoteMarksForPlayerType(playerType) .. "/" .. tablelength(self.NOTE_TYPES) .. ")"
             elseif goal == 17 then
-                local reqNoteMarks = tonumber(self.CONNECTION_INFO.slot_data["noteMarksAmount"])
+                local reqNoteMarks = tonumber(self.SLOT_DATA.noteMarksAmount)
                 text2 = text2 .. " (" .. self.COMPLETED_NOTE_MARKS .. "/" .. reqNoteMarks .. ";" .. playerName .. ":" ..
                             self:countNoteMarksForPlayerType(playerType) .. "/" .. tablelength(self.NOTE_TYPES) .. ")"
             end
@@ -1830,7 +1409,7 @@ function AP:showPermanentMessage()
         end
     else
         Isaac.RenderScaledText(text, self.HUD_OFFSET, 260 - 10 * 5 * self.INFO_TEXT_SCALE - self.HUD_OFFSET,
-            self.INFO_TEXT_SCALE, self.INFO_TEXT_SCALE, 255, 255, 255, 1)
+            self.INFO_TEXT_SCALE, self.INFO_TEXT_SCALE, 255, 255, 0, 1)
     end
 end
 function AP:proceedPickupTimer()
@@ -1838,9 +1417,7 @@ function AP:proceedPickupTimer()
         self.PICKUP_TIMER = self.PICKUP_TIMER - 1
     end
 end
-function AP:sendGoalReached()
-    self:sendBlocks({self:getGoalReachedCommand()})
-end
+
 function AP:goalIdToName(goal)
     return self.GOAL_NAMES[goal]
 end
@@ -1885,21 +1462,32 @@ function AP:saveSettings()
     modData.DEBUG_MODE = self.DEBUG_MODE
     modData.INFO_TEXT_SCALE = self.INFO_TEXT_SCALE
     modData.HUD_OFFSET = self.HUD_OFFSET
+    modData.SHOULD_AUTO_CONNECT = self.SHOULD_AUTO_CONNECT
     self.MOD_REF:SaveData(json.encode(modData))
 end
 function AP:loadSettings()
     if self.MOD_REF:HasData() then
         local modData = json.decode(self.MOD_REF:LoadData())
-        if modData ~= nil and modData.DEBUG_MODE ~= nil and modData.INFO_TEXT_SCALE ~= nil then
-            self.DEBUG_MODE = modData.DEBUG_MODE
-            self.INFO_TEXT_SCALE = modData.INFO_TEXT_SCALE
-            self.HUD_OFFSET = modData.HUD_OFFSET
+        if modData ~= nil then
+            if modData.DEBUG_MODE ~= nil then
+                self.DEBUG_MODE = modData.DEBUG_MODE    
+            end
+            if modData.INFO_TEXT_SCALE ~= nil then
+                self.INFO_TEXT_SCALE = modData.INFO_TEXT_SCALE
+            end
+            if modData.HUD_OFFSET ~= nil then
+                self.HUD_OFFSET = modData.HUD_OFFSET
+            end
+            if modData.SHOULD_AUTO_CONNECT ~= nil then
+                self.SHOULD_AUTO_CONNECT = modData.SHOULD_AUTO_CONNECT
+            end
         end
     end
 end
 function AP:loadOtherData(seed)
     if self.MOD_REF:HasData() then
         local modData = json.decode(self.MOD_REF:LoadData())
+        dbg_log("loaded seed: "..tostring(modData.SAVED_SEED))
         if modData ~= nil and modData.SAVED_SEED ~= nil and modData.SAVED_ITEM_INDEX ~= nil and
             modData.CUR_ITEM_STEP_VAL ~= nil and seed == modData.SAVED_SEED then
             self.LAST_RECEIVED_ITEM_INDEX = modData.SAVED_ITEM_INDEX
@@ -1911,13 +1499,8 @@ function AP:loadOtherData(seed)
     return true
 end
 function AP:saveOtherData(seed)
+    dbg_log("saving seed: "..tostring(seed))
     local modData = {}
-    Isaac.DebugString("AP:saveOtherData")
-    Isaac.DebugString("AP:saveOtherData"..tostring(self))
-    Isaac.DebugString("AP:saveOtherData"..tostring(self.MOD_REF))
-    Isaac.DebugString("AP:saveOtherData"..tostring(self.MOD_REF:HasData()))
-    Isaac.DebugString("AP:saveOtherData"..tostring(self.MOD_REF:LoadData()))
-    Isaac.DebugString(dump_table(json.decode(self.MOD_REF:LoadData())))
     if self.MOD_REF:HasData() then
         modData = json.decode(self.MOD_REF:LoadData())
     end
@@ -1925,32 +1508,6 @@ function AP:saveOtherData(seed)
     modData.SAVED_SEED = seed
     modData.CUR_ITEM_STEP_VAL = self.CUR_ITEM_STEP_VAL
     self.MOD_REF:SaveData(json.encode(modData))
-end
--- AP Game data cache saving/loading
-function AP:saveGameData(games)
-    -- ensure data/ap/ exists
-    if not self.MOD_REF:HasData() then
-        self.MOD_REF:SaveData(json.encode({}))
-    end
-    local file = io.open("data/ap/apcache.dat", "w+")
-    if file == nil then
-        print("Could not write AP cache file")
-        return
-    end
-    local encoded = json.encode(get_simple_game_data(self.GAME_DATA))
-    file:write(encoded)
-end
-
-function AP:loadGameData()
-    local file = io.open("data/ap/apcache.dat", "r")
-    if file == nil then
-        print("Could not read AP cache file")
-        self.GAME_DATA = {}
-        return
-    end
-    local encoded = file:read("*all")
-    self.GAME_DATA = json.decode(encoded)
-    self:adjustGameData()
 end
 
 
