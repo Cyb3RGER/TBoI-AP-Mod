@@ -1,4 +1,4 @@
-local APClient = require('lua-apclientpp')
+local APClient = package.loadlib(script_path() .. 'lua-apclientpp.dll', 'luaopen_apclientpp')()
 local json = require('json')
 
 -- AP client / Mod version 
@@ -49,7 +49,7 @@ function AP:initAPClient()
         if self.SLOT_DATA.deathLink and self.SLOT_DATA.deathLink == 1 then
             table.insert(AP.TAGS, "DeathLink")
             self.AP_CLIENT:ConnectUpdate(nil, AP.TAGS)
-        end        
+        end
         self.HAS_SEND_GOAL_MSG = false
         self.LAMB_KILL = false
         self.LAMB_BODY_KILL = false
@@ -93,7 +93,7 @@ function AP:initAPClient()
             self:setupPersistentNoteInfo()
         end
         dbg_log("Connected 3.5 loadOtherData")
-        if self.IS_CONTINUED then            
+        if self.IS_CONTINUED then
             dbg_log("Connected 3.75 loadOtherData")
             if not self:loadOtherData(self.SLOT_DATA.seed) then
                 self.AP_CLIENT = nil
@@ -144,7 +144,7 @@ function AP:initAPClient()
     function self.on_items_received(items)
         dbg_log("Items received:")
         for _, item in ipairs(items) do
-            dbg_log(tostring(item.item).." "..self.LAST_RECEIVED_ITEM_INDEX)
+            dbg_log(tostring(item.item) .. " " .. self.LAST_RECEIVED_ITEM_INDEX)
             if item.index > self.LAST_RECEIVED_ITEM_INDEX then
                 self:collectItem(item)
                 self.LAST_RECEIVED_ITEM_INDEX = item.index
@@ -174,7 +174,7 @@ function AP:initAPClient()
         end
         local required_locations = tonumber(self.SLOT_DATA.requiredLocations)
         local goal = tonumber(self.SLOT_DATA.goal)
-        if required_locations and goal and #self.CHECKED_LOCATIONS >= required_locations then
+        if required_locations and goal and #self.AP_CLIENT.checked_locations >= required_locations then
             if not self.HAS_SEND_GOAL_MSG then
                 self:addMessage({
                     parts = {{
@@ -191,91 +191,91 @@ function AP:initAPClient()
     end
 
     function self.on_data_package_changed(data_package)
-        --dbg_log("Data package changed:")
-        --dbg_log(data_package)
+        -- dbg_log("Data package changed:")
+        -- dbg_log(data_package)
     end
 
     function self.on_print(data)
-        --dbg_log(data)
+        -- dbg_log(data)
         self:addMessage(data)
     end
 
-    function self.on_print_json(data)
-        dbg_log("on_print_json")        
+    function self.on_print_json(data, extra)
+        dbg_log("on_print_json")
         local msg = {
             parts = {}
         }
         -- ignore own chat messages
-        -- if not block.type or block.type ~= "Chat" or not block.slot or not self.CONNECTION_INFO or block.slot ~=
-        --  self.CONNECTION_INFO.slot then
-        for _, v in ipairs(data) do
-            dbg_log(dump_table(v))
-            local text = v.text
-            local color = COLORS.WHITE
-            if not v.type or v.type == "text" then
-                -- nothing to do                
-            elseif v.type == "player_id" then
-                text = self:resolveIdToName(v.type, v.text)
-                color = COLORS.BLUE
-            elseif v.type == "player_name" then
-                color = COLORS.BLUE
-            elseif v.type == "item_id" then
-                text = self:resolveIdToName(v.type, v.text)
-                if v.flags & 4 == 4 then
-                    color = COLORS.RED
-                elseif v.flags & 2 == 2 or v.flags & 1 == 1 then
-                    color = COLORS.GREEN
-                else
-                    color = COLORS.YELLOW
-                end
-            elseif v.type == "item_name" then
-                if v.flags | 4 == 4 then
-                    color = COLORS.RED
-                elseif v.flags | 2 == 2 or v.flags | 1 == 1 then
-                    color = COLORS.YELLOW
-                else
-                    color = COLORS.GREEN
-                end
-            elseif v.type == "location_id" then
-                text = self:resolveIdToName(v.type, v.text)
-                color = COLORS.MAGENTA
-            elseif v.type == "location_name" then
-                color = COLORS.MAGENTA
-            elseif v.type == "entrance_name" then
-                color = COLORS.CYAN
-            elseif v.type == "color" then
-                if v.color == "black" then
-                    color = COLORS.BLACK
-                elseif v.color == "white" then
-                    color = COLORS.WHITE
-                elseif v.color == "red" then
-                    color = COLORS.RED
-                elseif v.color == "green" then
-                    color = COLORS.GREEN
-                elseif v.color == "blue" then
+        if not extra.type or extra.type ~= "Chat" or not extra.slot or not self.CONNECTION_INFO or extra.slot ~=
+            self.CONNECTION_INFO.slot then
+            for _, v in ipairs(data) do
+                dbg_log(dump_table(v))
+                local text = v.text
+                local color = COLORS.WHITE
+                if not v.type or v.type == "text" then
+                    -- nothing to do                
+                elseif v.type == "player_id" then
+                    text = self:resolveIdToName(v.type, v.text)
                     color = COLORS.BLUE
-                elseif v.color == "magenta" then
+                elseif v.type == "player_name" then
+                    color = COLORS.BLUE
+                elseif v.type == "item_id" then
+                    text = self:resolveIdToName(v.type, v.text)
+                    if v.flags & 4 == 4 then
+                        color = COLORS.RED
+                    elseif v.flags & 2 == 2 or v.flags & 1 == 1 then
+                        color = COLORS.GREEN
+                    else
+                        color = COLORS.YELLOW
+                    end
+                elseif v.type == "item_name" then
+                    if v.flags | 4 == 4 then
+                        color = COLORS.RED
+                    elseif v.flags | 2 == 2 or v.flags | 1 == 1 then
+                        color = COLORS.YELLOW
+                    else
+                        color = COLORS.GREEN
+                    end
+                elseif v.type == "location_id" then
+                    text = self:resolveIdToName(v.type, v.text)
                     color = COLORS.MAGENTA
-                elseif v.color == "cyan" then
+                elseif v.type == "location_name" then
+                    color = COLORS.MAGENTA
+                elseif v.type == "entrance_name" then
                     color = COLORS.CYAN
+                elseif v.type == "color" then
+                    if v.color == "black" then
+                        color = COLORS.BLACK
+                    elseif v.color == "white" then
+                        color = COLORS.WHITE
+                    elseif v.color == "red" then
+                        color = COLORS.RED
+                    elseif v.color == "green" then
+                        color = COLORS.GREEN
+                    elseif v.color == "blue" then
+                        color = COLORS.BLUE
+                    elseif v.color == "magenta" then
+                        color = COLORS.MAGENTA
+                    elseif v.color == "cyan" then
+                        color = COLORS.CYAN
+                    end
                 end
+                if not text then
+                    text = ""
+                end
+                local part = {
+                    msg = text,
+                    color = color,
+                    width = Isaac.GetTextWidth(text)
+                }
+                table.insert(msg.parts, part)
             end
-            if not text then
-                text = ""
-            end
-            local part = {
-                msg = text,
-                color = color,
-                width = Isaac.GetTextWidth(text)
-            }
-            table.insert(msg.parts, part)
+            self:addMessage(msg)
         end
-        self:addMessage(msg)
-        -- end
     end
 
     function self.on_bounced(bounce)
-        --dbg_log("Bounced:"..dump_table(bounce))
+        -- dbg_log("Bounced:"..dump_table(bounce))
         if bounce.tags and contains(bounce.tags, "DeathLink") and bounce.data then
             -- print(self.LAST_DEATH_LINK_TIME, block.data.time)
             if self.LAST_DEATH_LINK_TIME ~= nil and tostring(self.LAST_DEATH_LINK_TIME) == tostring(bounce.data.time) then
@@ -298,7 +298,7 @@ function AP:initAPClient()
 
     function self.on_retrieved(map)
         -- todo: look at map
-        dbg_log("Retrieved: "..dump_table(map))        
+        dbg_log("Retrieved: " .. dump_table(map))
         self:syncNoteInfoFromDict(map)
         self:syncFurthestFloor(map)
     end
@@ -339,7 +339,7 @@ function AP:initAPClient()
 end
 
 function AP:resolveIdToName(typeStr, id)
-    dbg_log("AP:resolveIdToName "..typeStr.." "..tostring(id))
+    dbg_log("AP:resolveIdToName " .. typeStr .. " " .. tostring(id))
     if string.find(typeStr, "location") then
         if type(id) == "string" then
             id = tonumber(id)
@@ -350,11 +350,11 @@ function AP:resolveIdToName(typeStr, id)
             id = tonumber(id)
         end
         return self.AP_CLIENT:get_item_name(id)
-    elseif string.find(typeStr, "player") then        
+    elseif string.find(typeStr, "player") then
         if type(id) == "string" then
             id = tonumber(id)
         end
-        dbg_log("AP:resolveIdToName player "..tostring(id))
+        dbg_log("AP:resolveIdToName player " .. tostring(id))
         return self.AP_CLIENT:get_player_alias(id)
     else
         print('!!! can to resolve Id to Name of unknown type !!!', typeStr)

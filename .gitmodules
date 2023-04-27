@@ -1,3 +1,0 @@
-[submodule "websocket"]
-	path = websocket
-	url = https://github.com/Cyb3RGER/simple-lua-websockets.git

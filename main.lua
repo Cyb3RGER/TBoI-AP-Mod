@@ -1,10 +1,4 @@
 local json = require('json')
---local ws_client = require('websocket.client_sync')
---local tools = require('websocket.tools')
---local handshake = require('websocket.handshake')
---local frame = require('websocket.frame')
---local socket = require('socket')
---local ap_client = require('lua-apclientpp')
 require('utils')
 require('statemachine')
 require('ap_mcm')
@@ -337,7 +331,7 @@ function AP:init()
             end
             self:saveOtherData(seed)
         end
-        self.AP_CLIENT:reset()
+        self.AP_CLIENT = nil
     end
     function self.onPrePickupCollision(mod, pickup, collider, low)
         local totalLocations = self.SLOT_DATA.totalLocations
@@ -1206,72 +1200,6 @@ function AP:spawnRandomPickupByType(type, subtype)
 end
 -- END AP util funcs
 
--- AP connection handling
-function AP:processBlock(data)
-    local blocks = json.decode(data)
-    if blocks == nil then
-        print("!!!! invalid CONTENT @ processBlock !!!!", data)
-        return
-    end
-    -- print("processBlock: ", dump_table(blocks))
-    for _, block in ipairs(blocks) do
-        local cmd = block.cmd
-        print('processing block', cmd)
-        if cmd == "ReceivedItems" then
-            
-        elseif cmd == "SetReply" then
-            -- print("! got SetReply !", dump_table(block))
-            
-        elseif cmd == "Bounced" then
-            -- print(dump_table(block))
-            
-        elseif cmd == "ConnectionRefused" then
-            
-        elseif cmd == "PrintJSON" then
-                        
-        elseif cmd == "Connected" then
-            
-        elseif cmd == "RoomInfo" then
-            
-        elseif cmd == "InvalidPacket" then
-            print("!!! got InvalidPacket !!!", dump_table(block))
-        elseif cmd == "Retrieved" then
-            -- print("! got Retrieved !", dump_table(block))
-            
-        elseif cmd == "LocationInfo" then
-            -- for _, v in pairs(block.locations) do
-            --    local name = self:resolveIdToName("item", v.item)            
-            --    local player = self:resolveIdToName("player", tostring(v.player))   
-            -- end
-        elseif cmd == "RoomUpdate" then
-            -- if block.missing_location then
-            --     for _, v in ipairs(block.missing_location) do
-            --         if not contains(self.MISSING_LOCATIONS, v) then
-            --             table.insert(self.MISSING_LOCATIONS, v)
-            --         end
-            --         local index = findIndex(self.CHECKED_LOCATIONS, v)
-            --         if index ~= nil then
-            --             table.remove(self.CHECKED_LOCATIONS, index)
-            --         end
-            --     end
-            -- end
-            -- if block.checked_locations then
-            --     for _, v in ipairs(block.checked_locations) do
-            --         if not contains(self.CHECKED_LOCATIONS, v) then
-            --             table.insert(self.CHECKED_LOCATIONS, v)
-            --         end
-            --         local index = findIndex(self.MISSING_LOCATIONS, v)
-            --         if index ~= nil then
-            --             table.remove(self.MISSING_LOCATIONS, index)
-            --         end
-            --     end                
-            -- end
-        elseif cmd == "DataPackage" then
-        else
-            print("! dropping packet: unhandled cmd " .. cmd .. " !")
-        end
-    end
-end
 function AP:reconnect()
     -- if self.STATE_MACHINE:get_state() ~= AP.STATE_EXIT then
     -- self:loadConnectionInfo()
