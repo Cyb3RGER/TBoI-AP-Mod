@@ -161,8 +161,8 @@ AP.TRAP_IMPLS = {
     [78773] = function(ap)
         local level = Game():GetLevel()
         if (level:GetCurrentRoomDesc().Flags & RoomDescriptor.FLAG_CURSED_MIST) ~= RoomDescriptor.FLAG_CURSED_MIST then
-            Game():StartRoomTransition(level:GetRandomRoomIndex(ap.SLOT_DATA.teleportTrapCanError,
-                ap.RNG:Next()), -1, RoomTransitionAnim.TELEPORT)
+            Game():StartRoomTransition(level:GetRandomRoomIndex(ap.SLOT_DATA.teleportTrapCanError, ap.RNG:Next()), -1,
+                RoomTransitionAnim.TELEPORT)
         end
     end,
     [78774] = function(ap)
@@ -218,10 +218,10 @@ function AP:init()
     self:initAPClient()
     self.STATE_MACHINE = SimpleStateMachine()
     ---- statemachine callbacks
-    --function self.onEnter_Connecting()
+    -- function self.onEnter_Connecting()
     --    self.LAST_RECEIVED_ITEM_INDEX = -1
-    --end
-    --function self.onTick_Connecting()
+    -- end
+    -- function self.onTick_Connecting()
     --    if self.RECONNECT_TRIES >= self.MAX_RECONNECT_TRIES then
     --        self:shutdown()
     --        return
@@ -252,25 +252,25 @@ function AP:init()
     --            self.RECONNECT_TRIES = self.RECONNECT_TRIES + 1
     --        end
     --    end
-    --end
-    --function self.onTick_Handshake()
+    -- end
+    -- function self.onTick_Handshake()
     --    self:receiveHandshake()
-    --end
-    --function self.onTick_Connected()
+    -- end
+    -- function self.onTick_Connected()
     --    self:receive()
-    --end
-    --function self.onEnter_Connected()
+    -- end
+    -- function self.onEnter_Connected()
     --    self:sendBlocks({self:getConnectCommand()})
-    --end
-    --function self.onEnter_Datapackage()
+    -- end
+    -- function self.onEnter_Datapackage()
     --    self:sendBlocks({self:getDataPackageCommand()})
-    --end
-    --function self.onExit_Connected()
+    -- end
+    -- function self.onExit_Connected()
     --    self:disconnect()
-    --end
-    --function self.onEnter_Exit()
+    -- end
+    -- function self.onEnter_Exit()
     --    self:disconnect()
-    --end
+    -- end
     -- END statemachine callbacks
     self.RECONNECT_INTERVAL = 5
     self.MAX_RECONNECT_TRIES = 1
@@ -299,13 +299,13 @@ function AP:init()
         self.RECEIVED_QUEUE = {}
         if self.SHOULD_AUTO_CONNECT then
             self:connectAP()
-        end          
+        end
     end
     function self.onPostRender(mod)
-        --dbg_log("onPostRender")`
+        -- dbg_log("onPostRender")`
         if self.AP_CLIENT then
-            self.AP_CLIENT:poll()    
-        end        
+            self.AP_CLIENT:poll()
+        end
         self.STATE_MACHINE:tick()
         self:showPermanentMessage()
         self:showMessages()
@@ -319,8 +319,8 @@ function AP:init()
     end
     function self.onPreGameExit(mod, shouldSave)
         if self.AP_CLIENT and self.AP_CLIENT:get_state() == 4 then
-            self:setPersistentInfoFurthestFloor()    
-        end        
+            self:setPersistentInfoFurthestFloor()
+        end
         self.ITEM_QUEUE = {}
         self.TRAP_QUEUE = {}
         self.SPAWN_QUEUE = {}
@@ -442,8 +442,7 @@ function AP:init()
     function self.onPostEntityKill(mod, entity)
         local player = entity:ToPlayer()
         -- ToDo: make send DeathLink on revive a option?
-        if player and self.SLOT_DATA.deathLink and self.SLOT_DATA.deathLink == 1 and
-            not player:WillPlayerRevive() then
+        if player and self.SLOT_DATA.deathLink and self.SLOT_DATA.deathLink == 1 and not player:WillPlayerRevive() then
             self:sendDeathLinkBounce()
             self:addMessage({
                 parts = {{
@@ -725,7 +724,6 @@ function AP:init()
     print("called AP:init", 4, "end")
 end
 
-
 -- AP Commands
 function AP:getConnectCommand()
     return {
@@ -881,9 +879,18 @@ function AP:checkNoteInfo()
     end
     self.COMPLETED_NOTES = count
     self.COMPLETED_NOTE_MARKS = countMarks
-    if ((count >= reqNoteAmount and goal == 16) or (countMarks >= reqNoteMarksAmount and goal == 17)) and
-        #self.AP_CLIENT.checked_locations >= required_locations then
-        self:sendGoalReached()
+    if ((count >= reqNoteAmount and goal == 16) or (countMarks >= reqNoteMarksAmount and goal == 17)) then
+        if #self.AP_CLIENT.checked_locations >= required_locations then
+            self:sendGoalReached()
+        else
+            self:addMessage({
+                parts = {{
+                    msg = "You have enough note marks to beat the game but are still missing required locations.",
+                    color = COLORS.GREEN
+                }}
+            })
+        end
+
     end
 end
 function AP:setupPersistentNoteInfo()
@@ -895,7 +902,7 @@ function AP:setupPersistentNoteInfo()
         end
     end
     self.AP_CLIENT:Get(keys)
-    self.AP_CLIENT:SetNotify(keys)    
+    self.AP_CLIENT:SetNotify(keys)
 end
 function AP:syncNoteInfoFromDict(dict)
     -- print("AP:syncNoteInfoFromDict", dump_table(dict), dump_table(self.NOTE_INFO))
@@ -978,7 +985,7 @@ function AP:getPersistentInfoFurthestFloor()
     local team = tonumber(self.CONNECTION_INFO.team)
     local slot = tonumber(self.CONNECTION_INFO.slot)
     local key = "tobir_" .. team .. "_" .. slot .. "_floor"
-    self.AP_CLIENT:Get({key})    
+    self.AP_CLIENT:Get({key})
 end
 function AP:setPersistentInfoFurthestFloor(op)
     if not op then
@@ -987,7 +994,7 @@ function AP:setPersistentInfoFurthestFloor(op)
     local team = tonumber(self.CONNECTION_INFO.team)
     local slot = tonumber(self.CONNECTION_INFO.slot)
     local key = "tobir_" .. team .. "_" .. slot .. "_floor"
-    self.AP_CLIENT:Set(key, 1, true, {{op, self.FURTHEST_FLOOR}})    
+    self.AP_CLIENT:Set(key, 1, true, {{op, self.FURTHEST_FLOOR}})
 end
 function AP:generateCollectableItemImpls(startIdx)
     for i = 0, CollectibleType.NUM_COLLECTIBLES - 2 do
@@ -1001,10 +1008,11 @@ function AP:clearLocations(amount)
     amount = amount or 1
     if amount > #self.AP_CLIENT.missing_locations then
         amount = #self.AP_CLIENT.missing_locations
-    end    
-    local ids = {}    
-    table.move(self.AP_CLIENT.missing_locations,1,amount,1,ids)
-    dbg_log("clearLocations"..dump_table(ids).." "..tostring(amount).." "..tostring(#self.AP_CLIENT.missing_locations))
+    end
+    local ids = {}
+    table.move(self.AP_CLIENT.missing_locations, 1, amount, 1, ids)
+    dbg_log("clearLocations" .. dump_table(ids) .. " " .. tostring(amount) .. " " ..
+                tostring(#self.AP_CLIENT.missing_locations))
     self:sendLocationsCleared(ids)
 end
 function AP:sendBossClearReward(entity)
@@ -1041,8 +1049,7 @@ function AP:collectItem(item)
     if roomDesc.Name == "Beast Room" then -- dont receive items in the beast room
         return
     end
-    if self.JUST_STARTED and self.SLOT_DATA.splitStartItems and
-        self.SLOT_DATA.splitStartItems > 0 then
+    if self.JUST_STARTED and self.SLOT_DATA.splitStartItems and self.SLOT_DATA.splitStartItems > 0 then
         self:addToItemQueue(id)
         return
     end
@@ -1317,8 +1324,8 @@ function AP:showPermanentMessage()
             self.INFO_TEXT_SCALE, self.INFO_TEXT_SCALE, 0, 255, 0, 1)
         if self.CONNECTION_INFO and self.SLOT_DATA then
             local goal = self.SLOT_DATA.goal
-            local text2 = string.format("%s/%s checked (need %s); next check: %s/%s; goal: %s", #self.AP_CLIENT.checked_locations,
-                self.SLOT_DATA.totalLocations, self.SLOT_DATA.requiredLocations,
+            local text2 = string.format("%s/%s checked (need %s); next check: %s/%s; goal: %s",
+                #self.AP_CLIENT.checked_locations, self.SLOT_DATA.totalLocations, self.SLOT_DATA.requiredLocations,
                 self.CUR_ITEM_STEP_VAL, self.SLOT_DATA.itemPickupStep, self:goalIdToName(goal))
             local player = Isaac.GetPlayer()
             local playerType = player:GetPlayerType()
@@ -1398,7 +1405,7 @@ function AP:loadSettings()
         local modData = json.decode(self.MOD_REF:LoadData())
         if modData ~= nil then
             if modData.DEBUG_MODE ~= nil then
-                self.DEBUG_MODE = modData.DEBUG_MODE    
+                self.DEBUG_MODE = modData.DEBUG_MODE
             end
             if modData.INFO_TEXT_SCALE ~= nil then
                 self.INFO_TEXT_SCALE = modData.INFO_TEXT_SCALE
@@ -1415,7 +1422,7 @@ end
 function AP:loadOtherData(seed)
     if self.MOD_REF:HasData() then
         local modData = json.decode(self.MOD_REF:LoadData())
-        dbg_log("loaded seed: "..tostring(modData.SAVED_SEED))
+        dbg_log("loaded seed: " .. tostring(modData.SAVED_SEED))
         if modData ~= nil and modData.SAVED_SEED ~= nil and modData.SAVED_ITEM_INDEX ~= nil and
             modData.CUR_ITEM_STEP_VAL ~= nil and seed == modData.SAVED_SEED then
             self.LAST_RECEIVED_ITEM_INDEX = modData.SAVED_ITEM_INDEX
@@ -1427,7 +1434,7 @@ function AP:loadOtherData(seed)
     return true
 end
 function AP:saveOtherData(seed)
-    dbg_log("saving seed: "..tostring(seed))
+    dbg_log("saving seed: " .. tostring(seed))
     local modData = {}
     if self.MOD_REF:HasData() then
         modData = json.decode(self.MOD_REF:LoadData())
@@ -1437,8 +1444,6 @@ function AP:saveOtherData(seed)
     modData.CUR_ITEM_STEP_VAL = self.CUR_ITEM_STEP_VAL
     self.MOD_REF:SaveData(json.encode(modData))
 end
-
-
 
 AP()
 

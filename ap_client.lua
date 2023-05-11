@@ -46,7 +46,7 @@ function AP:initAPClient()
         }
         self.SLOT_DATA = slot_data
         dbg_log("Connected 1" .. dump_table(self.CONNECTION_INFO))
-        if self.SLOT_DATA.deathLink and self.SLOT_DATA.deathLink == 1 then
+        if self.SLOT_DATA.deathLink and self.SLOT_DATA.deathLink == 1 and not contains(AP.TAGS, "DeathLink") then
             table.insert(AP.TAGS, "DeathLink")
             self.AP_CLIENT:ConnectUpdate(nil, AP.TAGS)
         end
@@ -186,6 +186,9 @@ function AP:initAPClient()
             end
             if goal == 15 then
                 self:sendGoalReached()
+            end
+            if goal == 16 or goal == 17 then
+                self:checkNoteInfo()
             end
         end
     end
@@ -369,12 +372,14 @@ function AP:sendDeathLinkBounce(cause, source)
     source = source or self.AP_CLIENT:get_player_alias(self.CONNECTION_INFO.slot)
     local time = self.AP_CLIENT:get_server_time()
     self.LAST_DEATH_LINK_TIME = time
-    -- print("AP:getDeathLinkBounceCommand", time, self.LAST_DEATH_LINK_TIME)
-    self.AP_CLIENT:Bounce({
+    dbg_log("AP:sendDeathLinkBounce "..tostring(time).." "..cause.." "..source)
+    local res = self.AP_CLIENT:Bounce({
         time = time,
         cause = cause,
         source = source
-    }, nil, nil, {"DeathLink"})
+    }, {}, {}, {"DeathLink"})
+    dbg_log("AP:sendDeathLinkBounce "..tostring(self.AP_CLIENT))
+    dbg_log("AP:sendDeathLinkBounce "..tostring(res))
 end
 function AP:collectSlot()
     if self.AP_CLIENT:get_state() ~= APClient.State["SLOT_CONNECTED"] then
