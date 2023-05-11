@@ -1,5 +1,8 @@
 AP_MCM = class()
 
+AP_MCM.CONN_SETTINGS_HEADER = "Server"
+AP_MCM.OTHER_SETTINGS_HEADER = "Settings"
+
 function AP_MCM:init(ap)
     if ModConfigMenu == nil then
         return
@@ -59,7 +62,142 @@ function AP_MCM:init(ap)
         ["KP_9"] = "9"
     }
     self.TOGGLE_LOWERCASE = false
-    ModConfigMenu.AddSetting(self.AP_REF.MOD_NAME, nil, {
+    ModConfigMenu.AddSetting(self.AP_REF.MOD_NAME, AP_MCM.OTHER_SETTINGS_HEADER, {
+        Type = ModConfigMenu.OptionType.BOOLEAN,
+        CurrentSetting = function()
+            return nil
+        end,
+        Display = function()
+            return "Connect"
+        end,
+        OnChange = function(v)
+            self.AP_REF:connectAP()
+        end,
+        Info = {"Click this to reconnect to the AP Server"}
+    })
+    ModConfigMenu.AddSetting(self.AP_REF.MOD_NAME, AP_MCM.OTHER_SETTINGS_HEADER, {
+        Type = ModConfigMenu.OptionType.BOOLEAN,
+        CurrentSetting = function()
+            return nil
+        end,
+        Display = function()
+            return "List Hints"
+        end,
+        OnChange = function(v)            
+            self.AP_REF:sendHintCommand(false, nil)
+        end,
+        Info = {"Click this to list hints for your world"}
+    })
+    ModConfigMenu.AddSetting(self.AP_REF.MOD_NAME, AP_MCM.OTHER_SETTINGS_HEADER, {
+        Type = ModConfigMenu.OptionType.BOOLEAN,
+        CurrentSetting = function()
+            return nil
+        end,
+        Display = function()
+            return "Get a Hint"
+        end,
+        OnChange = function(v)            
+            self.AP_REF:sendHintCommand(false, "Any Progression")
+        end,
+        Info = {"Click this to a hint for any progression item from your world"}
+    })
+    ModConfigMenu.AddSetting(self.AP_REF.MOD_NAME, AP_MCM.OTHER_SETTINGS_HEADER, {
+        Type = ModConfigMenu.OptionType.BOOLEAN,
+        CurrentSetting = function()
+            return nil
+        end,
+        Display = function()
+            return "Collect"
+        end,
+        OnChange = function(v)            
+            self.AP_REF:collectSlot()
+        end,
+        Info = {"Click this to collect all checks for this world"}
+    })
+    ModConfigMenu.AddSetting(self.AP_REF.MOD_NAME, AP_MCM.OTHER_SETTINGS_HEADER, {
+        Type = ModConfigMenu.OptionType.BOOLEAN,
+        CurrentSetting = function()
+            return self.AP_REF.SHOULD_AUTO_CONNECT
+        end,
+        Display = function()
+            local str = "Off"
+            if self.AP_REF.SHOULD_AUTO_CONNECT then
+                str = "On"
+            end
+            return "Auto-Connect: "..str
+        end,
+        OnChange = function(v)            
+            self.AP_REF.SHOULD_AUTO_CONNECT = not self.AP_REF.SHOULD_AUTO_CONNECT
+            self.AP_REF:saveSettings()
+        end,
+        Info = {"Should AP Auto-Connect on run start?"}
+    })
+    ModConfigMenu.AddSetting(self.AP_REF.MOD_NAME, AP_MCM.OTHER_SETTINGS_HEADER, {
+        Type = ModConfigMenu.OptionType.BOOLEAN,
+        CurrentSetting = function()
+            return nil
+        end,
+        Display = function()
+            return "Release"
+        end,
+        OnChange = function(v)            
+            self.AP_REF:releaseSlot()
+        end,
+        Info = {"Click this to release all checks from this world"}
+    })
+    self.TextScales = {0.25, 0.5, 1, 1.1, 1.2, 1.5}
+    ModConfigMenu.AddSetting(self.AP_REF.MOD_NAME, AP_MCM.OTHER_SETTINGS_HEADER, {
+        Type = ModConfigMenu.OptionType.NUMBER,
+        CurrentSetting = function()
+            return findIndex(self.TextScales, self.AP_REF.INFO_TEXT_SCALE)
+        end,
+        Minimum = 1,
+        Maximum = #self.TextScales,
+        Display = function()
+            return "Text Scale: " .. self.AP_REF.INFO_TEXT_SCALE
+        end,
+        OnChange = function(v)
+            self.AP_REF.INFO_TEXT_SCALE = self.TextScales[v]
+            self.AP_REF:saveSettings()
+        end,
+        Info = {"Adjust the Text Size of the AP mod"}
+    })
+    self.HudOffsets = {0, 5, 10, 15, 20, 25, 30}
+    ModConfigMenu.AddSetting(self.AP_REF.MOD_NAME, AP_MCM.OTHER_SETTINGS_HEADER, {
+        Type = ModConfigMenu.OptionType.NUMBER,
+        CurrentSetting = function()
+            return findIndex(self.HudOffsets, self.AP_REF.HUD_OFFSET)
+        end,
+        Minimum = 1,
+        Maximum = #self.HudOffsets,
+        Display = function()
+            return "HUD Offset: " .. self.AP_REF.HUD_OFFSET
+        end,
+        OnChange = function(v)
+            self.AP_REF.HUD_OFFSET = self.HudOffsets[v]
+            self.AP_REF:saveSettings()
+        end,
+        Info = {"Adjust where the AP Text is placed on the HUD"}
+    })
+    ModConfigMenu.AddSetting(self.AP_REF.MOD_NAME, AP_MCM.OTHER_SETTINGS_HEADER, {
+        Type = ModConfigMenu.OptionType.BOOLEAN,
+        CurrentSetting = function()
+            return self.AP_REF.DEBUG_MODE
+        end,
+        Display = function()
+            local str = "Off"
+            if self.AP_REF.DEBUG_MODE then
+                str = "On"
+            end
+            return "Debug Mode: " .. str
+        end,
+        OnChange = function(v)
+            self.AP_REF.DEBUG_MODE = not self.AP_REF.DEBUG_MODE
+            self.AP_REF:saveSettings()
+        end,
+        Info = {"For debugging"}
+    })
+    ModConfigMenu.AddSetting(self.AP_REF.MOD_NAME, AP_MCM.CONN_SETTINGS_HEADER, {
         Type = ModConfigMenu.OptionType.TEXT,
         CurrentSetting = function()
             return self.AP_REF.HOST_ADDRESS
@@ -72,7 +210,7 @@ function AP_MCM:init(ap)
         end,
         Info = {"This the IP address of the AP Host Server"}
     })
-    ModConfigMenu.AddSetting(self.AP_REF.MOD_NAME, nil, {
+    ModConfigMenu.AddSetting(self.AP_REF.MOD_NAME, AP_MCM.CONN_SETTINGS_HEADER, {
         Type = ModConfigMenu.OptionType.BOOLEAN,
         CurrentSetting = function()
             return nil
@@ -96,7 +234,7 @@ function AP_MCM:init(ap)
         end,
         Info = {"ENTER = quit & save, ESC = quit,$newline$newlineSHIFT = toggle case"}
     })
-    ModConfigMenu.AddSetting(self.AP_REF.MOD_NAME, nil, {
+    ModConfigMenu.AddSetting(self.AP_REF.MOD_NAME, AP_MCM.CONN_SETTINGS_HEADER, {
         Type = ModConfigMenu.OptionType.TEXT,
         CurrentSetting = function()
             return self.HOST_PORT
@@ -109,7 +247,7 @@ function AP_MCM:init(ap)
         end,
         Info = {"This the port of the AP Host Server"}
     })
-    ModConfigMenu.AddSetting(self.AP_REF.MOD_NAME, nil, {
+    ModConfigMenu.AddSetting(self.AP_REF.MOD_NAME, AP_MCM.CONN_SETTINGS_HEADER, {
         Type = ModConfigMenu.OptionType.BOOLEAN,
         CurrentSetting = function()
             return nil
@@ -133,7 +271,7 @@ function AP_MCM:init(ap)
         end,
         Info = {"ENTER = quit & save, ESC = quit,$newline$newlineSHIFT = toggle case"}
     })
-    ModConfigMenu.AddSetting(self.AP_REF.MOD_NAME, nil, {
+    ModConfigMenu.AddSetting(self.AP_REF.MOD_NAME, AP_MCM.CONN_SETTINGS_HEADER, {
         Type = ModConfigMenu.OptionType.TEXT,
         CurrentSetting = function()
             return self.SLOT_NAME
@@ -146,7 +284,7 @@ function AP_MCM:init(ap)
         end,
         Info = {"This is the slot name of the slot you want to connect to in the AP Room"}
     })
-    ModConfigMenu.AddSetting(self.AP_REF.MOD_NAME, nil, {
+    ModConfigMenu.AddSetting(self.AP_REF.MOD_NAME, AP_MCM.CONN_SETTINGS_HEADER, {
         Type = ModConfigMenu.OptionType.BOOLEAN,
         CurrentSetting = function()
             return nil
@@ -170,7 +308,7 @@ function AP_MCM:init(ap)
         end,
         Info = {"ENTER = quit & save, ESC = quit,$newline$newlineSHIFT = toggle case"}
     })
-    ModConfigMenu.AddSetting(self.AP_REF.MOD_NAME, nil, {
+    ModConfigMenu.AddSetting(self.AP_REF.MOD_NAME, AP_MCM.CONN_SETTINGS_HEADER, {
         Type = ModConfigMenu.OptionType.TEXT,
         CurrentSetting = function()
             return self.PASSWORD
@@ -190,7 +328,7 @@ function AP_MCM:init(ap)
         end,
         Info = {"This the password of the AP Room. This is optional."}
     })
-    ModConfigMenu.AddSetting(self.AP_REF.MOD_NAME, nil, {
+    ModConfigMenu.AddSetting(self.AP_REF.MOD_NAME, AP_MCM.CONN_SETTINGS_HEADER, {
         Type = ModConfigMenu.OptionType.BOOLEAN,
         CurrentSetting = function()
             return nil
@@ -214,124 +352,6 @@ function AP_MCM:init(ap)
         end,
         Info = {"ENTER = quit & save, ESC = quit,$newline$newlineSHIFT = toggle case"}
     })
-    ModConfigMenu.AddSetting(self.AP_REF.MOD_NAME, nil, {
-        Type = ModConfigMenu.OptionType.BOOLEAN,
-        CurrentSetting = function()
-            return nil
-        end,
-        Display = function()
-            return "Reconnect"
-        end,
-        OnChange = function(v)
-            self.AP_REF.RECONNECT_TRIES = 0
-            self.AP_REF:reconnect()
-        end,
-        Info = {"Click this to reconnect to the AP Server"}
-    })
-    ModConfigMenu.AddSetting(self.AP_REF.MOD_NAME, nil, {
-        Type = ModConfigMenu.OptionType.BOOLEAN,
-        CurrentSetting = function()
-            return nil
-        end,
-        Display = function()
-            return "List Hints"
-        end,
-        OnChange = function(v)            
-            self.AP_REF:sendHintCommand(false, nil)
-        end,
-        Info = {"Click this to list hints for your world"}
-    })
-    ModConfigMenu.AddSetting(self.AP_REF.MOD_NAME, nil, {
-        Type = ModConfigMenu.OptionType.BOOLEAN,
-        CurrentSetting = function()
-            return nil
-        end,
-        Display = function()
-            return "Get a Hint"
-        end,
-        OnChange = function(v)            
-            self.AP_REF:sendHintCommand(false, "Any Progression")
-        end,
-        Info = {"Click this to a hint for any progression item from your world"}
-    })
-    ModConfigMenu.AddSetting(self.AP_REF.MOD_NAME, nil, {
-        Type = ModConfigMenu.OptionType.BOOLEAN,
-        CurrentSetting = function()
-            return nil
-        end,
-        Display = function()
-            return "Collect"
-        end,
-        OnChange = function(v)            
-            self.AP_REF:collectSlot()
-        end,
-        Info = {"Click this to collect all checks for this world"}
-    })
-    ModConfigMenu.AddSetting(self.AP_REF.MOD_NAME, nil, {
-        Type = ModConfigMenu.OptionType.BOOLEAN,
-        CurrentSetting = function()
-            return nil
-        end,
-        Display = function()
-            return "Release"
-        end,
-        OnChange = function(v)            
-            self.AP_REF:releaseSlot()
-        end,
-        Info = {"Click this to release all checks from this world"}
-    })
-    self.TextScales = {0.25, 0.5, 1, 1.1, 1.2, 1.5}
-    ModConfigMenu.AddSetting(self.AP_REF.MOD_NAME, nil, {
-        Type = ModConfigMenu.OptionType.NUMBER,
-        CurrentSetting = function()
-            return findIndex(self.TextScales, self.AP_REF.INFO_TEXT_SCALE)
-        end,
-        Minimum = 1,
-        Maximum = #self.TextScales,
-        Display = function()
-            return "Text Scale: " .. self.AP_REF.INFO_TEXT_SCALE
-        end,
-        OnChange = function(v)
-            self.AP_REF.INFO_TEXT_SCALE = self.TextScales[v]
-            self.AP_REF:saveSettings()
-        end,
-        Info = {"Adjust the Text Size of the AP mod"}
-    })
-    self.HudOffsets = {0, 5, 10, 15, 20, 25, 30}
-    ModConfigMenu.AddSetting("AP Integration", nil, {
-        Type = ModConfigMenu.OptionType.NUMBER,
-        CurrentSetting = function()
-            return findIndex(self.HudOffsets, self.AP_REF.HUD_OFFSET)
-        end,
-        Minimum = 1,
-        Maximum = #self.HudOffsets,
-        Display = function()
-            return "HUD Offset: " .. self.AP_REF.HUD_OFFSET
-        end,
-        OnChange = function(v)
-            self.AP_REF.HUD_OFFSET = self.HudOffsets[v]
-            self.AP_REF:saveSettings()
-        end,
-        Info = {"Adjust where the AP Text is placed on the HUD"}
-    })
-    ModConfigMenu.AddSetting("AP Integration", nil, {
-        Type = ModConfigMenu.OptionType.BOOLEAN,
-        CurrentSetting = function()
-            return self.AP_REF.DEBUG_MODE
-        end,
-        Display = function()
-            local str = "Off"
-            if self.AP_REF.DEBUG_MODE then
-                str = "On"
-            end
-            return "Debug Mode: " .. str
-        end,
-        OnChange = function(v)
-            self.AP_REF.DEBUG_MODE = not self.AP_REF.DEBUG_MODE
-            self.AP_REF:saveSettings()
-        end,
-        Info = {"For debugging"}
-    })
     function self.onInputAction()
         self:trackTypingInput()
     end    
@@ -342,20 +362,18 @@ function AP_MCM:init(ap)
     end
     self.AP_REF.MOD_REF:AddCallback(ModCallbacks.MC_INPUT_ACTION, self.onInputAction)
     self.AP_REF.MOD_REF:AddCallback(ModCallbacks.MC_POST_RENDER, self.onPostRender)
-    --Isaac.DebugString(dump_table(self))
 end
 function AP_MCM:trackTypingInput()
     --print("self.trackTypingInput",0.1, InputHelper, ModConfigMenu)
     if not InputHelper or not ModConfigMenu then
         return
     end
-    --print("self.trackTypingInput",0.2, self.UNLOCK_TYPING)
-   
+    --print("self.trackTypingInput",0.2, self.UNLOCK_TYPING)   
     if not self.UNLOCK_TYPING then
         ModConfigMenu.ControlsEnabled = true
         return
     end
-    print("self.trackTypingInput",0.3, ModConfigMenu.IsVisible)
+    --print("self.trackTypingInput",0.3, ModConfigMenu.IsVisible)
     if not ModConfigMenu.IsVisible then
         self.UNLOCK_TYPING = false
         return
@@ -363,7 +381,7 @@ function AP_MCM:trackTypingInput()
     ModConfigMenu.ControlsEnabled = false
     local receivedInput = false
     local endTyping = false
-    print("self.trackTypingInput",0.5, ModConfigMenu.ControlsEnabled)
+    --print("self.trackTypingInput",0.5, ModConfigMenu.ControlsEnabled)
     -- capture input
     self.PRESSED_BUTTONS = {}
     for i = 0, 4 do
@@ -376,7 +394,7 @@ function AP_MCM:trackTypingInput()
         end
     end
     -- type input
-    print("self.trackTypingInput",1,receivedInput)
+    --print("self.trackTypingInput",1,receivedInput)
     if receivedInput then
         for i = 0, 4 do
             if self.PRESSED_BUTTONS[i] then
@@ -439,7 +457,7 @@ function AP_MCM:trackTypingInput()
 end
 function AP_MCM:typeKey(key)
     local keyName = InputHelper.KeyboardToString[key] or "Unknown"
-    print("self.typeKey", 1, key, keyName)
+    --print("self.typeKey", 1, key, keyName)
     if #keyName == 1 then
         if not self.TOGGLE_LOWERCASE then
             keyName = string.lower(keyName)

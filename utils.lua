@@ -104,8 +104,8 @@ function dump_table(o, depth)
         depth = 0
     end
     if type(o) == 'table' then
-        local tabs = ('\t'):rep(depth)
-        local tabs2 = ('\t'):rep(depth + 1)
+        local tabs = ('  '):rep(depth)
+        local tabs2 = ('  '):rep(depth + 1)
         local s = '{\n'
         for k, v in pairs(o) do
             if type(k) ~= 'number' then
@@ -247,8 +247,8 @@ function tablelength(T)
 end
 
 function dbg_log(str)
-    print(str)
-    Isaac.DebugString(str)
+    print("[AP] "..tostring(str))
+    Isaac.DebugString("[AP] "..tostring(str))
 end
 
 function split(str, sep)
@@ -287,4 +287,9 @@ function debugPlayers()
         end
         print("-------------------------------------------------")
     end
+end
+
+function script_path()
+    local str = debug.getinfo(2, "S").source:sub(2)
+    return str:match("(.*/)")
 end 
