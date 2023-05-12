@@ -1,6 +1,6 @@
 local json = require('json')
 require('utils')
-require('statemachine')
+require('class')
 require('ap_mcm')
 
 AP = class()
@@ -216,62 +216,7 @@ function AP:init()
     -- print("called AP:init", 1.5, self.HOST_ADDRESS, self.HOST_PORT, self.SLOT_NAME, self.PASSWORD)    
     -- ap client / statemachine
     self:initAPClient()
-    self.STATE_MACHINE = SimpleStateMachine()
-    ---- statemachine callbacks
-    -- function self.onEnter_Connecting()
-    --    self.LAST_RECEIVED_ITEM_INDEX = -1
-    -- end
-    -- function self.onTick_Connecting()
-    --    if self.RECONNECT_TRIES >= self.MAX_RECONNECT_TRIES then
-    --        self:shutdown()
-    --        return
-    --    end
-    --    self.currTime = os.time()
-    --    if self.lastTime + self.RECONNECT_INTERVAL <= self.currTime then
-    --        self.lastTime = self.currTime
-    --        self.socket = ws_client()
-    --        local ret, err = self.socket:sock_connect(self.HOST_ADDRESS, self.HOST_PORT)
-    --        if ret == 1 then
-    --            print('Connection established')
-    --            self.socket:set_timeout(0)
-    --            local key = tools.generate_key()
-    --            local req = handshake.upgrade_request {
-    --                key = key,
-    --                host = self.HOST_ADDRESS,
-    --                port = self.HOST_PORT,
-    --                protocols = {'ws'},
-    --                origin = '',
-    --                uri = 'ws://' .. self.HOST_ADDRESS .. ':' .. self.HOST_PORT
-    --            }
-    --            self.socket:sock_send(req)
-    --            self.STATE_MACHINE:set_state(AP.STATE_HANDSHAKE)
-    --        else
-    --            print('Failed to open socket:', err) -- ToDo: show as message
-    --            self.socket:sock_close()
-    --            self.socket = nil
-    --            self.RECONNECT_TRIES = self.RECONNECT_TRIES + 1
-    --        end
-    --    end
-    -- end
-    -- function self.onTick_Handshake()
-    --    self:receiveHandshake()
-    -- end
-    -- function self.onTick_Connected()
-    --    self:receive()
-    -- end
-    -- function self.onEnter_Connected()
-    --    self:sendBlocks({self:getConnectCommand()})
-    -- end
-    -- function self.onEnter_Datapackage()
-    --    self:sendBlocks({self:getDataPackageCommand()})
-    -- end
-    -- function self.onExit_Connected()
-    --    self:disconnect()
-    -- end
-    -- function self.onEnter_Exit()
-    --    self:disconnect()
-    -- end
-    -- END statemachine callbacks
+    
     self.RECONNECT_INTERVAL = 5
     self.MAX_RECONNECT_TRIES = 1
     self.RECONNECT_TRIES = 0
@@ -306,7 +251,6 @@ function AP:init()
         if self.AP_CLIENT then
             self.AP_CLIENT:poll()
         end
-        self.STATE_MACHINE:tick()
         self:showPermanentMessage()
         self:showMessages()
         if self.DEBUG_MODE then
@@ -1205,27 +1149,6 @@ function AP:spawnRandomPickupByType(type, subtype)
     -- print("AP:spawnRandomPickupByType", "after loop", pos, num, subtype)
     Isaac.Spawn(EntityType.ENTITY_PICKUP, type, subtype, pos, Vector(0, 0), nil)
 end
--- END AP util funcs
-
-function AP:reconnect()
-    -- if self.STATE_MACHINE:get_state() ~= AP.STATE_EXIT then
-    -- self:loadConnectionInfo()
-    -- self.RECONNECT_TRIES = 0
-    self.STATE_MACHINE:set_state(AP.STATE_CONNECTING)
-    -- end
-end
-function AP:disconnect()
-    self.CONNECTION_INFO = nil
-    self.ROOM_INFO = nil
-    self.LAMB_KILL = false
-    self.LAMB_BODY_KILL = false
-    self.HAS_SEND_GOAL_MSG = false
-    if self.socket then
-        self.socket:sock_close()
-        self.socket = nil
-    end
-end
--- END AP connection handling
 
 -- AP message printing
 function AP:addMessage(msg)
