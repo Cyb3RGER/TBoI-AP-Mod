@@ -201,7 +201,7 @@ AP.TRAP_IMPLS = {
 
 function AP:init()
     AP.INSTANCE = self
-    print("called AP:init", 1)
+    dbg_log("called AP:init 1")
     self:generateCollectableItemImpls(78040)
     self.RNG = RNG()
     self.RNG:SetSeed(Random(), 35)
@@ -216,12 +216,12 @@ function AP:init()
     -- print("called AP:init", 1.5, self.HOST_ADDRESS, self.HOST_PORT, self.SLOT_NAME, self.PASSWORD)    
     -- ap client / statemachine
     self:initAPClient()
-    
+
     self.RECONNECT_INTERVAL = 5
     self.MAX_RECONNECT_TRIES = 1
     self.RECONNECT_TRIES = 0
     self.SHOULD_AUTO_CONNECT = false
-    print("called AP:init", 2)
+    dbg_log("called AP:init 2")
     -- Isaac mod ref
     self.MOD_REF = RegisterMod(self.MOD_NAME, 1)
     self.AP_ITEM_ID = Isaac.GetItemIdByName("AP Item")
@@ -283,13 +283,13 @@ function AP:init()
         local collectableIndex = getCollectableIndex(pickup)
         if pickup.Variant ~= PickupVariant.PICKUP_COLLECTIBLE or collider.Type ~= EntityType.ENTITY_PLAYER or
             checkedLocations >= totalLocations or (pickup.Touched and pickup.SubType ~= self.AP_ITEM_ID) -- used to not make AP spawned item collectable until rerolled
-        or pickup.SubType == CollectibleType.COLLECTIBLE_POLAROID or pickup.SubType ==
-            CollectibleType.COLLECTIBLE_NEGATIVE or pickup.SubType == CollectibleType.COLLECTIBLE_KEY_PIECE_1 or
-            pickup.SubType == CollectibleType.COLLECTIBLE_KEY_PIECE_2 or pickup.SubType ==
-            CollectibleType.COLLECTIBLE_DADS_NOTE or pickup.SubType == CollectibleType.COLLECTIBLE_KNIFE_PIECE_1 or
-            pickup.SubType == CollectibleType.COLLECTIBLE_KNIFE_PIECE_2 -- check for special items: polaroid/negative or key/knife pieces or dad's note
         or pickup.SubType == CollectibleType.COLLECTIBLE_NULL -- might get called when bumping in a already collected collectable
         then
+            return
+        end
+        local itemConfig = Isaac.GetItemConfig():GetCollectible(pickup.SubType)
+        -- check for special items like polaroid/negative, key/knife pieces or dad's note
+        if itemConfig:HasTags(ItemConfig.TAG_QUEST) then
             return
         end
         -- check timer
