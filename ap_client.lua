@@ -342,7 +342,7 @@ function AP:initAPClient()
 end
 
 function AP:resolveIdToName(typeStr, id)
-    dbg_log("AP:resolveIdToName " .. typeStr .. " " .. tostring(id))
+    --dbg_log("AP:resolveIdToName " .. typeStr .. " " .. tostring(id))
     if string.find(typeStr, "location") then
         if type(id) == "string" then
             id = tonumber(id)
@@ -357,10 +357,10 @@ function AP:resolveIdToName(typeStr, id)
         if type(id) == "string" then
             id = tonumber(id)
         end
-        dbg_log("AP:resolveIdToName player " .. tostring(id))
+        --dbg_log("AP:resolveIdToName player " .. tostring(id))
         return self.AP_CLIENT:get_player_alias(id)
     else
-        print('!!! can to resolve Id to Name of unknown type !!!', typeStr)
+        dbg_log('!!! can to resolve Id to Name of unknown type '..typeStr..' !!!')
         return id
     end
 end
@@ -415,6 +415,7 @@ function AP:sendHintCommand(isLocation, name)
     self.AP_CLIENT:Say(text)
 end
 function AP:sendGoalReached()
+    dbg_log('sendGoalReached')
     self.AP_CLIENT:StatusUpdate(30)
 end
 

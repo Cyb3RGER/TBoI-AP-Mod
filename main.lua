@@ -421,9 +421,7 @@ function AP:init()
             else
                 self.LAMB_KILL = true
             end
-            if self.LAMB_BODY_KILL and self.LAMB_KILL then
-                table.insert(self.KILLED_BOSSES, type)
-            end
+            dbg_log("Lamb Kill info changed: LAMB_BODY_KILL: "..tostring(self.LAMB_BODY_KILL).." LAMB_KILL: "..tostring(self.LAMB_KILL))
         end
         if isGoalBoss and self.SLOT_DATA.additionalBossRewards then
             self:sendBossClearReward(entity)
@@ -437,7 +435,7 @@ function AP:init()
         if not contains(bosses, type) then
             return
         end
-        -- print('called entityKill', 3, "is goal boss", type, entity.Variant)  
+        print('called entityKill', 3, "is goal boss", type, entity.Variant)  
         local playerType = Isaac.GetPlayer():GetPlayerType()
         local isHardMode = self:isHardMode()
         -- blue baby uses a SubType of Isaac => requries special handling
@@ -465,11 +463,14 @@ function AP:init()
             end
             return
             -- the lamb uses two entities The Lamb itself + the body => requries special handling
-        elseif self.LAMB_KILL and self.LAMB_BODY_KILL then
-            if goal == 5 or goal == 7 then
-                self:sendGoalReached()
-            elseif goal == 16 or goal == 17 then
-                self:setPersistentNoteInfo(self.NOTE_TYPES.NEGATIVE, playerType, isHardMode)
+        elseif type == EntityType.ENTITY_THE_LAMB then
+            if self.LAMB_KILL and self.LAMB_BODY_KILL then
+                dbg_log("lamb dead?")
+                if goal == 5 or goal == 7 then
+                    self:sendGoalReached()
+                elseif goal == 16 or goal == 17 then
+                    self:setPersistentNoteInfo(self.NOTE_TYPES.NEGATIVE, playerType, isHardMode)
+                end
             end
             return
             -- Dogma uses Variant == 2 for the 2nd phase
@@ -638,7 +639,6 @@ function AP:init()
     }
     self.LAMB_KILL = false
     self.LAMB_BODY_KILL = false
-    self.KILLED_BOSSES = {}
     -- -- restock fix related
     self.PICKUP_TIMER = 0
     -- global AP info
