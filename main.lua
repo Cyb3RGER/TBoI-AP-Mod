@@ -583,7 +583,7 @@ function AP:init()
         [13] = "Mother",
         [14] = "Delirium",
         [15] = "Required locations",
-        [16] = "Full Note(s)",
+        [16] = "Full Notes",
         [17] = "Note Marks"
     }
     self.NOTE_TYPES = {
