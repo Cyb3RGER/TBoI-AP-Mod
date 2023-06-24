@@ -529,7 +529,7 @@ function AP:attemptSendGoalReached()
 end
 
 function AP:sendBossClearReward(boss)
-    if self.killed_bosses[boss] then -- certain bosses "die" multiple times.
+    if self.killed_bosses[boss] then -- certain bosses "die" multiple times. This is stopped by keeping track of them in a list.
         return
     end
     
