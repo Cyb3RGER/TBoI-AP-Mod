@@ -56,6 +56,7 @@ function AP:init()
         self.TRAP_QUEUE = {}
         self.TRAP_QUEUE_TIMER = 150
         self.RECEIVED_QUEUE = {}
+        self.killed_bosses = {}
         if self.SHOULD_AUTO_CONNECT then
             self:connectAP()
         end
@@ -184,18 +185,10 @@ function AP:init()
     end
     function self.onPreSpawnClearAward(mod)
         local room = Game():GetRoom()
-        local goal = tonumber(self.SLOT_DATA.goal)
         -- print("self.onPreSpawnClearAward", room, goal)
         -- check for boss rush
         if room:GetType() == RoomType.ROOM_BOSSRUSH and room:IsAmbushDone() and room:IsClear() then
-            if self.SLOT_DATA.additionalBossRewards then
-                self:clearLocations(2)
-            end
-            if goal == 9 then
-                self:sendGoalReached()
-            elseif goal == 16 or goal == 17 then
-                self:setPersistentNoteInfo(self.NOTE_TYPES.STAR, Isaac.GetPlayer():GetPlayerType(), self:isHardMode())
-            end
+          self:sendBossClearReward(self.bosses.BOSS_RUSH)
         end
     end
     function self.onPostEntityKill(mod, entity)
@@ -210,8 +203,6 @@ function AP:init()
                 }}
             })
         end
-        local goal = tonumber(self.SLOT_DATA.goal)
-        local required_locations = tonumber(self.SLOT_DATA.requiredLocations)
         local type = entity.Type
         -- print('called entityKill', 1, entity, type, entity.Variant, goal, required_locations, #self.CHECKED_LOCATIONS)
         local isGoalBoss = false
@@ -238,97 +229,61 @@ function AP:init()
             end
             dbg_log("Lamb Kill info changed: LAMB_BODY_KILL: "..tostring(self.LAMB_BODY_KILL).." LAMB_KILL: "..tostring(self.LAMB_KILL))
         end
-        if isGoalBoss and self.SLOT_DATA.additionalBossRewards then
-            self:sendBossClearReward(entity)
-        end
-        -- we can only win if we check enough locations
-        if #self.AP_CLIENT.checked_locations < required_locations and goal ~= 16 and goal ~= 17 then
-            return
-        end
-        local bosses = self.GOAL_BOSSES[goal]
-        -- print('called entityKill', 2, dump_table(bosses), type)
-        if not contains(bosses, type) then
-            return
-        end
         print('called entityKill', 3, "is goal boss", type, entity.Variant)  
         local playerType = Isaac.GetPlayer():GetPlayerType()
         local isHardMode = self:isHardMode()
         -- blue baby uses a SubType of Isaac => requries special handling
         if type == EntityType.ENTITY_ISAAC then
-            if (goal == 2 or goal == 3) and entity.Variant == 0 then
-                self:sendGoalReached()
-            elseif (goal == 5 or goal == 6) and entity.Variant == 1 then
-                self:sendGoalReached()
-            elseif goal == 16 or goal == 17 then
-                if entity.Variant == 0 then
-                    self:setPersistentNoteInfo(self.NOTE_TYPES.CROSS, playerType, isHardMode)
-                elseif entity.Variant == 1 then
-                    self:setPersistentNoteInfo(self.NOTE_TYPES.POLAROID, playerType, isHardMode)
-                end
+            if entity.Variant == 0 then
+              self:sendBossClearReward(self.bosses.ISAAC)
+            elseif entity.Variant == 1 then
+              self:sendBossClearReward(self.bosses.BLUE_BABY)
             end
             return
             -- phase 2 is Variant 10 and ending phase 1 counts as killing Variant 0 sometimes => requries special handling
         elseif type == EntityType.ENTITY_SATAN then
             if entity.Variant == 10 then
-                if (goal == 2 or goal == 4) then
-                    self:sendGoalReached()
-                elseif goal == 16 or goal == 17 then
-                    self:setPersistentNoteInfo(self.NOTE_TYPES.INVERTED_CROSS, playerType, isHardMode)
-                end
+                self:sendBossClearReward(self.bosses.SATAN)
+
+                self.SATAN_KILL = true
             end
             return
             -- the lamb uses two entities The Lamb itself + the body => requries special handling
         elseif type == EntityType.ENTITY_THE_LAMB then
             if self.LAMB_KILL and self.LAMB_BODY_KILL then
-                dbg_log("lamb dead?")
-                if goal == 5 or goal == 7 then
-                    self:sendGoalReached()
-                elseif goal == 16 or goal == 17 then
-                    self:setPersistentNoteInfo(self.NOTE_TYPES.NEGATIVE, playerType, isHardMode)
-                end
+                self:sendBossClearReward(self.bosses.LAMB)
             end
             return
             -- Dogma uses Variant == 2 for the 2nd phase
         elseif type == EntityType.ENTITY_DOGMA then
             if goal == 11 and entity.Variant == 2 then
-                self:sendGoalReached()
+                self:sendBossClearReward(self.bosses.DOGMA)
             end
             return
             -- Variant 0 is the final kill
         elseif type == EntityType.ENTITY_BEAST then
             if entity.Variant == 0 then
-                if goal == 12 then
-                    self:sendGoalReached()
-                elseif goal == 16 or goal == 17 then
-                    self:setPersistentNoteInfo(self.NOTE_TYPES.DADS_NOTE, playerType, isHardMode)
-                end
+                self:sendBossClearReward(self.bosses.BEAST)
             end
             return
-            -- Mother uses Variant == 10 for the 2nd phase
         elseif type == EntityType.ENTITY_MOTHER then
             if entity.Variant == 10 then
-                if goal == 13 then
-                    self:sendGoalReached()
-                elseif goal == 16 or goal == 17 then
-                    self:setPersistentNoteInfo(self.NOTE_TYPES.KNIFE, playerType, isHardMode)
-                end
+                self:sendBossClearReward(self.bosses.MOTHER)
             end
             return
         else
-            if goal ~= 16 and goal ~= 17 then
-                self:sendGoalReached()
-            else
-                if type == EntityType.ENTITY_MOMS_HEART then
-                    self:setPersistentNoteInfo(self.NOTE_TYPES.HEART, playerType, isHardMode)
-                elseif type == EntityType.ENTITY_MEGA_SATAN_2 then
-                    self:setPersistentNoteInfo(self.NOTE_TYPES.BRIMSTONE, playerType, isHardMode)
-                elseif type == EntityType.ENTITY_HUSH then
-                    self:setPersistentNoteInfo(self.NOTE_TYPES.HUSHS_FACE, playerType, isHardMode)
-                elseif type == EntityType.ENTITY_ULTRA_GREED then
-                    self:setPersistentNoteInfo(self.NOTE_TYPES.CENT_SIGN, playerType, isHardMode)
-                elseif type == EntityType.ENTITY_DELIRIUM then
-                    self:setPersistentNoteInfo(self.NOTE_TYPES.WRINKLED_PAPER, playerType, isHardMode)
-                end
+            if type == EntityType.ENTITY_MOMS_HEART then
+                self:sendBossClearReward(self.bosses.MOMS_HEART)
+            elseif type == EntityType.ENTITY_MEGA_SATAN_2 then
+                self:sendBossClearReward(self.bosses.MEGA_SATAN)
+            elseif type == EntityType.ENTITY_HUSH then
+                self:sendBossClearReward(self.bosses.HUSH)
+            elseif type == EntityType.ENTITY_ULTRA_GREED then
+                self:sendBossClearReward(self.bosses.ULTRA_GREED)
+            elseif type == EntityType.ENTITY_DELIRIUM then
+                self:sendBossClearReward(self.bosses.DELIRIUM)
+            elseif type == EntityType.ENTITY_MOM then
+                self:sendBossClearReward(self.bosses.MOM)
             end
             return
         end
@@ -451,6 +406,55 @@ function AP:init()
         [32] = {PlayerType.PLAYER_BETHANY_B},
         [33] = {PlayerType.PLAYER_JACOB_B, PlayerType.PLAYER_JACOB2_B}
     }
+
+    self.bosses = {
+      MOM = 0,
+      MOMS_HEART = 1,
+      ISAAC = 3,
+      SATAN = 4,
+      BLUE_BABY = 6,
+      LAMB = 7,
+      MEGA_SATAN = 8,
+      BOSS_RUSH = 9,
+      HUSH = 10,
+      DOGMA = 11,
+      BEAST = 12,
+      MOTHER = 13,
+      DELIRIUM = 14,
+      ULTRA_GREED = -1
+    }
+
+    self.killed_bosses = {}
+
+    self.bossRewardAmounts = { -- Name = {{Direct Goals}, Amount of items to send}, 
+        [self.bosses.MOM] = 1,
+        [self.bosses.BOSS_RUSH] = 2,
+        [self.bosses.MOMS_HEART] = 2,
+        [self.bosses.ISAAC] = 3,
+        [self.bosses.SATAN] = 3,
+        [self.bosses.HUSH] = 3,
+        [self.bosses.BLUE_BABY] = 4,
+        [self.bosses.LAMB] = 5,
+        [self.bosses.MEGA_SATAN] = 5,
+        [self.bosses.DELIRIUM] = 5,
+        [self.bosses.MOTHER] = 5
+    }
+
+    self.bossToNoteType = {
+        [self.bosses.BOSS_RUSH] = self.NOTE_TYPES.STAR,
+        [self.bosses.ISAAC] = self.NOTE_TYPES.CROSS,
+        [self.bosses.BLUE_BABY] = self.NOTE_TYPES.POLAROID,
+        [self.bosses.SATAN] = self.NOTE_TYPES.INVERTED_CROSS,
+        [self.bosses.BEAST] = self.NOTE_TYPES.DADS_NOTE,
+        [self.bosses.MOTHER] = self.NOTE_TYPES.KNIFE,
+        [self.bosses.LAMB] = self.NOTE_TYPES.NEGATIVE,
+        [self.bosses.MOMS_HEART] = self.NOTE_TYPES.HEART,
+        [self.bosses.MEGA_SATAN] = self.NOTE_TYPES.BRIMSTONE,
+        [self.bosses.HUSH] = self.NOTE_TYPES.HUSHS_FACE,
+        [self.bosses.ULTRA_GREED] = self.NOTE_TYPES.CENT_SIGN,
+        [self.bosses.DELIRIUM] = self.NOTE_TYPES.WRINKLED_PAPER
+    }
+    
     self.LAMB_KILL = false
     self.LAMB_BODY_KILL = false
     -- double pickup fix related
@@ -511,31 +515,49 @@ function AP:clearLocations(amount)
                 tostring(#self.AP_CLIENT.missing_locations))
     self:sendLocationsCleared(ids)
 end
-function AP:sendBossClearReward(entity)
-    local type = entity.Type
-    local variant = entity.Variant
 
-    -- boss rush is handled via onPreSpawnClearAward
-    if type == EntityType.ENTITY_MOM and variant == 10 then
-        self:clearLocations(1)
-    elseif type == EntityType.ENTITY_MOMS_HEART and variant == 10 then
-        self:clearLocations(2)
-    elseif (type == EntityType.ENTITY_ISAAC and variant == 0) or
-        (type == EntityType.ENTITY_SATAN and variant == 10 and not self.SATAN_KILL) or type == EntityType.ENTITY_HUSH then
-        self:clearLocations(3)
-        if type == EntityType.ENTITY_SATAN then
-            self.SATAN_KILL = true -- dies twice
+function AP:attemptSendGoalReached()
+    local goal = tonumber(self.SLOT_DATA.goal)
+    if #self.AP_CLIENT.checked_locations >= tonumber(self.SLOT_DATA.requiredLocations) then
+        self:sendGoalReached()
+    elseif goal == 16 or goal == 17 then
+        self:addMessage({
+            parts = {{
+                msg = "You have enough note marks to beat the game but are still missing required locations.",
+                color = COLORS.GREEN
+            }}
+        })
+    end
+end
+
+function AP:sendBossClearReward(boss)
+    -- dbg_log("AP:sendBossClearReward"..tostring(boss)..tostring(self.killed_bosses[boss]))
+    if self.killed_bosses[boss] then -- certain bosses "die" multiple times. This is stopped by keeping track of them in a list.
+        return
+    end
+    
+    self.killed_bosses[boss] = true
+
+    local goal = tonumber(self.SLOT_DATA.goal)
+    -- dbg_log("AP:sendBossClearReward"..tostring(goal))
+    if goal == 16 or goal == 17 then
+        if self.bossToNoteType[boss] ~= nil then
+          -- dbg_log("AP:sendBossClearReward noteinfo "..tostring(self.bossToNoteType[boss]))
+          self:setPersistentNoteInfo(self.bossToNoteType[boss], Isaac.GetPlayer():GetPlayerType(), self:isHardMode())
         end
-    elseif (type == EntityType.ENTITY_ISAAC and variant == 1) or
-        (type == EntityType.ENTITY_THE_LAMB and self.LAMB_KILL and self.LAMB_BODY_KILL) then
-        self:clearLocations(4)
-    elseif type == EntityType.ENTITY_MEGA_SATAN_2 or type == EntityType.ENTITY_DELIRIUM or
-        (type == EntityType.ENTITY_MOTHER and variant == 10) or (type == EntityType.ENTITY_BEAST and variant == 0) then
-        self:clearLocations(5)
-    elseif type == EntityType.ENTITY_DOGMA then
-        -- do nothing   
     else
-        print("!!! tried to send clear reward for unknown goal boss !!!")
+      if boss == goal then -- The boss enum has been set up in such a way that the values of bosses match up with their goals
+          self:attemptSendGoalReached()
+      elseif goal == 2 and (boss == self.bosses.ISAAC or boss == self.bosses.SATAN) then
+          self:attemptSendGoalReached()
+      elseif goal == 5 and (boss == self.bosses.BLUE_BABY or boss == self.bosses.LAMB) then
+          self:attemptSendGoalReached()
+      end
+    end
+
+    if self.bossRewardAmounts[boss] ~= nil and self.SLOT_DATA.additionalBossRewards then
+        -- dbg_log("AP:sendBossClearReward boss rewards")
+        self:clearLocations(self.bossRewardAmounts[boss])
     end
 end
 function AP:goalIdToName(goal)
@@ -611,7 +633,6 @@ function AP:countNoteMarksForPlayerType(player_type)
 end
 function AP:checkNoteInfo()
     -- print("AP:checkNoteInfo", 1, dump_table(self.NOTE_INFO))
-    local required_locations = tonumber(self.SLOT_DATA.requiredLocations)
     local reqNoteAmount = tonumber(self.SLOT_DATA.fullNoteAmount)
     local reqNoteMarksAmount = tonumber(self.SLOT_DATA.noteMarksAmount)
     local goal = tonumber(self.SLOT_DATA.goal)
@@ -642,17 +663,7 @@ function AP:checkNoteInfo()
     self.COMPLETED_NOTES = count
     self.COMPLETED_NOTE_MARKS = countMarks
     if ((count >= reqNoteAmount and goal == 16) or (countMarks >= reqNoteMarksAmount and goal == 17)) then
-        if #self.AP_CLIENT.checked_locations >= required_locations then
-            self:sendGoalReached()
-        else
-            self:addMessage({
-                parts = {{
-                    msg = "You have enough note marks to beat the game but are still missing required locations.",
-                    color = COLORS.GREEN
-                }}
-            })
-        end
-
+        self:attemptSendGoalReached()
     end
 end
 
