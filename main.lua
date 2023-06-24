@@ -662,7 +662,7 @@ function AP:checkNoteInfo()
     self.COMPLETED_NOTES = count
     self.COMPLETED_NOTE_MARKS = countMarks
     if ((count >= reqNoteAmount and goal == 16) or (countMarks >= reqNoteMarksAmount and goal == 17)) then
-        self.attemptSendGoalReached()
+        self:attemptSendGoalReached()
     end
 end
 
