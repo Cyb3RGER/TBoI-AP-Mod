@@ -203,8 +203,6 @@ function AP:init()
                 }}
             })
         end
-        local goal = tonumber(self.SLOT_DATA.goal)
-        local required_locations = tonumber(self.SLOT_DATA.requiredLocations)
         local type = entity.Type
         -- print('called entityKill', 1, entity, type, entity.Variant, goal, required_locations, #self.CHECKED_LOCATIONS)
         local isGoalBoss = false
@@ -503,17 +501,29 @@ function AP:clearLocations(amount)
     self:sendLocationsCleared(ids)
 end
 
+function AP:attemptSendGoalReached()
+    if #self.AP_CLIENT.checked_locations >= tonumber(self.SLOT_DATA.requiredLocations) then
+        self:sendGoalReached()
+    else
+        self:addMessage({
+            parts = {{
+                msg = "You have enough note marks to beat the game but are still missing required locations.",
+                color = COLORS.GREEN
+            }}
+        })
+    end
+end
+
 function AP:sendBossClearReward(boss)
     if goal == 16 or goal == 17 then
         self:setPersistentNoteInfo(self.bossToNoteType[boss], Isaac.GetPlayer():GetPlayerType(), self:isHardMode())
-    elseif self.AP_CLIENT.checked_locations < required_locations then
-      if GOAL_NAMES[boss] == goal then
-          self:sendGoalReached()
+    else
+      if self.GOAL_NAMES[boss] == goal then
+          self:attemptSendGoalReached()
       elseif goal == 2 and (boss == "Isaac" or boss == "Satan") then
-          self:sendGoalReached()
+          self:attemptSendGoalReached()
       elseif goal == 5 and (boss == "???" or boss == "The Lamb") then
-          self:sendGoalReached()
-              -- we can only win if we check enough locations
+          self:attemptSendGoalReached()
       end
     end
 
@@ -594,7 +604,6 @@ function AP:countNoteMarksForPlayerType(player_type)
 end
 function AP:checkNoteInfo()
     -- print("AP:checkNoteInfo", 1, dump_table(self.NOTE_INFO))
-    local required_locations = tonumber(self.SLOT_DATA.requiredLocations)
     local reqNoteAmount = tonumber(self.SLOT_DATA.fullNoteAmount)
     local reqNoteMarksAmount = tonumber(self.SLOT_DATA.noteMarksAmount)
     local goal = tonumber(self.SLOT_DATA.goal)
@@ -625,17 +634,7 @@ function AP:checkNoteInfo()
     self.COMPLETED_NOTES = count
     self.COMPLETED_NOTE_MARKS = countMarks
     if ((count >= reqNoteAmount and goal == 16) or (countMarks >= reqNoteMarksAmount and goal == 17)) then
-        if #self.AP_CLIENT.checked_locations >= required_locations then
-            self:sendGoalReached()
-        else
-            self:addMessage({
-                parts = {{
-                    msg = "You have enough note marks to beat the game but are still missing required locations.",
-                    color = COLORS.GREEN
-                }}
-            })
-        end
-
+        self.attemptSendGoalReached()
     end
 end
 
