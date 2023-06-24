@@ -517,9 +517,10 @@ function AP:clearLocations(amount)
 end
 
 function AP:attemptSendGoalReached()
+    local goal = tonumber(self.SLOT_DATA.goal)
     if #self.AP_CLIENT.checked_locations >= tonumber(self.SLOT_DATA.requiredLocations) then
         self:sendGoalReached()
-    else
+    elseif goal == 16 and goal == 17 then
         self:addMessage({
             parts = {{
                 msg = "You have enough note marks to beat the game but are still missing required locations.",
