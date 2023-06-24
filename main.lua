@@ -516,7 +516,9 @@ end
 
 function AP:sendBossClearReward(boss)
     if goal == 16 or goal == 17 then
-        self:setPersistentNoteInfo(self.bossToNoteType[boss], Isaac.GetPlayer():GetPlayerType(), self:isHardMode())
+        if self.bossToNoteType[boss] ~= nil then
+          self:setPersistentNoteInfo(self.bossToNoteType[boss], Isaac.GetPlayer():GetPlayerType(), self:isHardMode())
+        end
     else
       if self.GOAL_NAMES[boss] == goal then
           self:attemptSendGoalReached()
@@ -527,7 +529,7 @@ function AP:sendBossClearReward(boss)
       end
     end
 
-    if bossRewardAmounts[boss] ~= nil and self.SLOT_DATA.additionalBossRewards then
+    if self.bossRewardAmounts[boss] ~= nil and self.SLOT_DATA.additionalBossRewards then
         self:clearLocations(bossRewardAmounts[boss])
     end
 end
