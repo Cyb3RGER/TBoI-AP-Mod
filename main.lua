@@ -56,6 +56,7 @@ function AP:init()
         self.TRAP_QUEUE = {}
         self.TRAP_QUEUE_TIMER = 150
         self.RECEIVED_QUEUE = {}
+        self.killed_bosses = {}
         if self.SHOULD_AUTO_CONNECT then
             self:connectAP()
         end
@@ -529,6 +530,7 @@ function AP:attemptSendGoalReached()
 end
 
 function AP:sendBossClearReward(boss)
+    -- dbg_log("AP:sendBossClearReward"..tostring(boss)..tostring(self.killed_bosses[boss]))
     if self.killed_bosses[boss] then -- certain bosses "die" multiple times. This is stopped by keeping track of them in a list.
         return
     end
@@ -536,9 +538,10 @@ function AP:sendBossClearReward(boss)
     self.killed_bosses[boss] = true
 
     local goal = tonumber(self.SLOT_DATA.goal)
-
+    -- dbg_log("AP:sendBossClearReward"..tostring(goal))
     if goal == 16 or goal == 17 then
         if self.bossToNoteType[boss] ~= nil then
+          -- dbg_log("AP:sendBossClearReward noteinfo "..tostring(self.bossToNoteType[boss]))
           self:setPersistentNoteInfo(self.bossToNoteType[boss], Isaac.GetPlayer():GetPlayerType(), self:isHardMode())
         end
     else
@@ -552,6 +555,7 @@ function AP:sendBossClearReward(boss)
     end
 
     if self.bossRewardAmounts[boss] ~= nil and self.SLOT_DATA.additionalBossRewards then
+        -- dbg_log("AP:sendBossClearReward boss rewards")
         self:clearLocations(self.bossRewardAmounts[boss])
     end
 end
