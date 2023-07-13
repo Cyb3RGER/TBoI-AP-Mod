@@ -385,7 +385,7 @@ function AP:init()
         [11] = {PlayerType.PLAYER_LILITH},
         [12] = {PlayerType.PLAYER_KEEPER},
         [13] = {PlayerType.PLAYER_APOLLYON},
-        [14] = {PlayerType.PLAYER_THESOUL},
+        [14] = {PlayerType.PLAYER_THEFORGOTTEN, PlayerType.PLAYER_THESOUL},
         [15] = {PlayerType.PLAYER_BETHANY},
         [16] = {PlayerType.PLAYER_JACOB, PlayerType.PLAYER_ESAU},
         [17] = {PlayerType.PLAYER_ISAAC_B},
@@ -402,7 +402,7 @@ function AP:init()
         [28] = {PlayerType.PLAYER_LILITH_B},
         [29] = {PlayerType.PLAYER_KEEPER_B},
         [30] = {PlayerType.PLAYER_APOLLYON_B},
-        [31] = {PlayerType.PLAYER_THEFORGOTTEN_B},
+        [31] = {PlayerType.PLAYER_THEFORGOTTEN_B, PlayerType.PLAYER_THESOUL_B},
         [32] = {PlayerType.PLAYER_BETHANY_B},
         [33] = {PlayerType.PLAYER_JACOB_B, PlayerType.PLAYER_JACOB2_B}
     }
