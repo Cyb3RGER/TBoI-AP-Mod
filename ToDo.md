@@ -36,6 +36,7 @@
 - [x] fix teleport cucking you out of 2nd knife piece?
 - [x] fix Tainted Isaac getting items permanently `-> spawn item on ground when 8 item in inv. not prefect but good enough imo`
 - [ ] fix temporary characters sending death links `-> can't find a ~~good~~ way to differentiate via API`
+  - [ ] potentially temporary characters can receive items?
 - [ ] look into game crashing (and borking save) on beating goal? `can't reproduce`
 - [ ] look into transformation seemingly not working or applying delayed `can't reproduce`
 - [x] replace check items with a AP item on pickup
@@ -64,6 +65,7 @@
 - [x] new goal: (certain amount of) note marks
 - [ ] option to not connect on run start
 - [ ] AP bum?!
+- [x] Fix Found Soul sending double items and receiving items
 
 ## Maybe Later:
 - [ ] wighting / balancing

@@ -197,16 +197,25 @@ end
 -- AP item impl helpers
 function AP:spawnCollectible(item, forceItem)
     local player = Game():GetNearestPlayer(Isaac.GetRandomPosition())
+    -- Found Soul fix
+    while player.Variant == 1 and player.SubType == 59 do
+        -- dbg_log("AP:spawnCollectible rerolling player from "..tostring(player:GetName()))
+        player = Game():GetNearestPlayer(Isaac.GetRandomPosition())
+    end
+    -- dbg_log("AP:spawnCollectible "..tostring(player:GetName()))
     local item_config = Isaac:GetItemConfig():GetCollectible(item)
-    -- print("AP:spawnCollectible", player:GetCollectibleCount())
+    -- dbg_log("AP:spawnCollectible "..tostring(item_config))
+    -- print("AP:spawnCollectible", splayer:GetCollectibleCount())
     if (item_config.Type ~= ItemType.ITEM_ACTIVE or player:GetActiveItem(ActiveSlot.SLOT_PRIMARY) == 0) and
         not (player:GetPlayerType() == PlayerType.PLAYER_ISAAC_B and player:GetCollectibleCount() > 8) and item ~=
         CollectibleType.COLLECTIBLE_TMTRAINER then
         -- FixMe: transformations cause graphical glitches sometimes
         -- player:QueueItem(item_config)        
         -- player:FlushQueueItem()
+        -- dbg_log("AP:spawnCollectible AddCollectible")
         player:AddCollectible(item)
     else
+        -- dbg_log("AP:spawnCollectible Spawning")
         local room = Game():GetRoom()
         local num = 1
         local startPos = room:GetClampedPosition(Vector(player.Position.X, player.Position.Y - 1), 0)

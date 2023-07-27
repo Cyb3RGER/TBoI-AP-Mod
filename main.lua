@@ -41,6 +41,17 @@ function AP:init()
     self.AP_ITEM_ID = Isaac.GetItemIdByName("AP Item")
     self.AP_ITEM_ID_CHEAP = Isaac.GetItemIdByName("AP Item (10 coins)")
     self.AP_ITEM_TRAP_PARALISYS = Isaac.GetItemIdByName("AP Trap (Paralysis)")
+    self.COLLECTABLE_IMPLS = {
+        [self.AP_ITEM_ID] = function(ap, player)
+            ap:clearLocations(1)
+        end,
+        [self.AP_ITEM_ID_CHEAP] = function(ap, player)
+            ap:clearLocations(1)
+        end,
+        [self.AP_ITEM_TRAP_PARALISYS] = function(ap, player)
+            player:UsePill(PillEffect.PILLEFFECT_PARALYSIS, PillColor.PILL_NULL)
+        end
+    }
     self:initMCM()
     self:loadConnectionInfo()
     self:loadSettings()
@@ -170,17 +181,14 @@ function AP:init()
         -- mod:AddCallback(ModCallbacks.MC_PRE_PICKUP_COLLISION, self.onPrePickupCollision)
     end
     function self.onPostPEffectUpdate(mod, player)
-        if player:HasCollectible(self.AP_ITEM_ID) then
-            self:clearLocations(1)
-            player:RemoveCollectible(self.AP_ITEM_ID)
-        end
-        if player:HasCollectible(self.AP_ITEM_ID_CHEAP) then
-            self:clearLocations(1)
-            player:RemoveCollectible(self.AP_ITEM_ID_CHEAP)
-        end
-        if player:HasCollectible(self.AP_ITEM_TRAP_PARALISYS) then
-            player:UsePill(PillEffect.PILLEFFECT_PARALYSIS, PillColor.PILL_NULL)
-            player:RemoveCollectible(self.AP_ITEM_TRAP_PARALISYS)
+        for id, impl in pairs(self.COLLECTABLE_IMPLS) do
+            if type(impl) == "function" and player:HasCollectible(id) then
+                -- Found Soul fix
+                if player.Variant ~= 1 or player.SubType ~= 59 then
+                    impl(self, player)
+                end
+                player:RemoveCollectible(id)
+            end
         end
     end
     function self.onPreSpawnClearAward(mod)
