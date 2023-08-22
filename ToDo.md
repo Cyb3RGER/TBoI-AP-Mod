@@ -66,6 +66,7 @@
 - [ ] option to not connect on run start
 - [ ] AP bum?!
 - [x] Fix Found Soul sending double items and receiving items
+- [ ] fix devil deals changing price when morphing
 
 ## Maybe Later:
 - [ ] wighting / balancing
