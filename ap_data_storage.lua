@@ -26,7 +26,7 @@ function AP:setPersistentNoteInfo(note_type, player_type, isHardMode)
     local char = -1
     for k, v in pairs(self.NOTE_CHARS) do
         -- print("AP:setPersistentNoteInfo", 3, player_type, dump_table(v))
-        if contains(v, player_type) then
+        if tbl_contains(v, player_type) then
             char = k
             break
         end

@@ -215,7 +215,7 @@ function AP:init()
         -- print('called entityKill', 1, entity, type, entity.Variant, goal, required_locations, #self.CHECKED_LOCATIONS)
         local isGoalBoss = false
         for _, v in pairs(self.GOAL_BOSSES) do
-            if contains(v, type) then
+            if tbl_contains(v, type) then
                 isGoalBoss = true
                 break
             end
@@ -252,7 +252,6 @@ function AP:init()
         elseif type == EntityType.ENTITY_SATAN then
             if entity.Variant == 10 then
                 self:sendBossClearReward(self.bosses.SATAN)
-
                 self.SATAN_KILL = true
             end
             return
@@ -619,7 +618,7 @@ end
 function AP:countNoteMarksForPlayerType(player_type)
     local char = -1
     for k, v in pairs(self.NOTE_CHARS) do
-        if contains(v, player_type) then
+        if tbl_contains(v, player_type) then
             char = k
             break
         end

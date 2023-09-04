@@ -279,7 +279,7 @@ function AP:initAPClient()
 
     function self.on_bounced(bounce)
         -- dbg_log("Bounced:"..dump_table(bounce))
-        if bounce.tags and contains(bounce.tags, "DeathLink") and bounce.data then
+        if bounce.tags and tbl_contains(bounce.tags, "DeathLink") and bounce.data then
             -- print(self.LAST_DEATH_LINK_TIME, block.data.time)
             if self.LAST_DEATH_LINK_TIME ~= nil and tostring(self.LAST_DEATH_LINK_TIME) == tostring(bounce.data.time) then
                 -- our own package -> Do nothing

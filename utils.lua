@@ -119,7 +119,7 @@ function dump_table(o, depth)
     end
 end
 
-function contains(list, value)
+function tbl_contains(list, value)
     for _, v in pairs(list) do
         if v == value then
             return true
@@ -128,10 +128,10 @@ function contains(list, value)
     return false
 end
 
-function findIndex(list, value)
+function tbl_find_index(list, value)
     for k, v in pairs(list) do
         if v == value then
-            print("findIndex", dump_table(list), value, k)
+            print("tbl_find_index", dump_table(list), value, k)
             return k
         end
     end
