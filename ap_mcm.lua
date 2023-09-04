@@ -146,7 +146,7 @@ function AP:initMCM()
     ModConfigMenu.AddSetting(self.MOD_NAME, AP.OTHER_SETTINGS_HEADER, {
         Type = ModConfigMenu.OptionType.NUMBER,
         CurrentSetting = function()
-            return findIndex(self.TextScales, self.INFO_TEXT_SCALE)
+            return tbl_find_index(self.TextScales, self.INFO_TEXT_SCALE)
         end,
         Minimum = 1,
         Maximum = #self.TextScales,
@@ -163,7 +163,7 @@ function AP:initMCM()
     ModConfigMenu.AddSetting(self.MOD_NAME, AP.OTHER_SETTINGS_HEADER, {
         Type = ModConfigMenu.OptionType.NUMBER,
         CurrentSetting = function()
-            return findIndex(self.HudOffsets, self.HUD_OFFSET)
+            return tbl_find_index(self.HudOffsets, self.HUD_OFFSET)
         end,
         Minimum = 1,
         Maximum = #self.HudOffsets,
