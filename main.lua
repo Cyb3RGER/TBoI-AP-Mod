@@ -39,7 +39,7 @@ function AP:init()
     -- Isaac mod ref
     self.MOD_REF = RegisterMod(self.MOD_NAME, 1)
     self.AP_ITEM_ID = Isaac.GetItemIdByName("AP Item")
-    self.AP_ITEM_ID_CHEAP = Isaac.GetItemIdByName("AP Item (10 coins)")
+    self.AP_ITEM_ID_CHEAP = Isaac.GetItemIdByName("AP Item (10 coins/1 heart)")
     self.AP_ITEM_TRAP_PARALISYS = Isaac.GetItemIdByName("AP Trap (Paralysis)")
     self.COLLECTABLE_IMPLS = {
         [self.AP_ITEM_ID] = function(ap, player)
@@ -127,8 +127,11 @@ function AP:init()
         local room = Game():GetRoom()
         -- check if we can buy this, if shop item
         if pickup:IsShopItem() then
+            -- dbg_log(
+            --     "onPrePickupCollision " .. tostring(pickup.Price) .. " " .. tostring(player:GetMaxHearts()) .. " " ..
+            --         tostring(player:GetSoulHearts()) .. " " .. tostring(player:WillPlayerRevive()))
             if pickup.Price > 0 then
-                if pickup.Price > collider:ToPlayer():GetNumCoins() then
+                if pickup.Price > player:GetNumCoins() then
                     return
                 end
                 -- 1 or 2 hearts deal
@@ -154,17 +157,18 @@ function AP:init()
             -- print("onPrePickupCollision", pickup.Wait, pickup.State)
             local item_step = self.SLOT_DATA.itemPickupStep
             self.CUR_ITEM_STEP_VAL = self.CUR_ITEM_STEP_VAL + 1
-            print('item is potential AP item', item_step, self.CUR_ITEM_STEP_VAL, #self.AP_CLIENT.missing_locations,
-                pickup.SubType, pickup.State)
+            dbg_log(string.format('onPrePickupCollision: item is potential AP item %s %s %s %s %s', item_step,
+                self.CUR_ITEM_STEP_VAL, #self.AP_CLIENT.missing_locations, pickup.SubType, pickup.State))
             if self.CUR_ITEM_STEP_VAL == item_step then
                 -- self:clearLocations(1)                
                 self.CUR_ITEM_STEP_VAL = 0
                 local itemConfig = Isaac.GetItemConfig():GetCollectible(pickup.SubType)
-                print("onPrePickupCollision", self.AP_ITEM_ID)
-                if (itemConfig.ShopPrice == 10) then
+                if (itemConfig.ShopPrice == 10 or itemConfig.DevilPrice == 1 or not itemConfig.DevilPrice) then
+                    -- print("onPrePickupCollision", "cheap", self.AP_ITEM_ID_CHEAP)
                     pickup:Morph(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, self.AP_ITEM_ID_CHEAP,
                         true, true, true)
                 else
+                    -- print("onPrePickupCollision", "normal", self.AP_ITEM_ID)
                     pickup:Morph(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, self.AP_ITEM_ID, true,
                         true, true)
                 end
@@ -196,7 +200,7 @@ function AP:init()
         -- print("self.onPreSpawnClearAward", room, goal)
         -- check for boss rush
         if room:GetType() == RoomType.ROOM_BOSSRUSH and room:IsAmbushDone() and room:IsClear() then
-          self:sendBossClearReward(self.bosses.BOSS_RUSH)
+            self:sendBossClearReward(self.bosses.BOSS_RUSH)
         end
     end
     function self.onPostEntityKill(mod, entity)
@@ -235,17 +239,18 @@ function AP:init()
             else
                 self.LAMB_KILL = true
             end
-            dbg_log("Lamb Kill info changed: LAMB_BODY_KILL: "..tostring(self.LAMB_BODY_KILL).." LAMB_KILL: "..tostring(self.LAMB_KILL))
+            dbg_log("Lamb Kill info changed: LAMB_BODY_KILL: " .. tostring(self.LAMB_BODY_KILL) .. " LAMB_KILL: " ..
+                        tostring(self.LAMB_KILL))
         end
-        print('called entityKill', 3, "is goal boss", type, entity.Variant)  
+        print('called entityKill', 3, "is goal boss", type, entity.Variant)
         local playerType = Isaac.GetPlayer():GetPlayerType()
         local isHardMode = self:isHardMode()
         -- blue baby uses a SubType of Isaac => requries special handling
         if type == EntityType.ENTITY_ISAAC then
             if entity.Variant == 0 then
-              self:sendBossClearReward(self.bosses.ISAAC)
+                self:sendBossClearReward(self.bosses.ISAAC)
             elseif entity.Variant == 1 then
-              self:sendBossClearReward(self.bosses.BLUE_BABY)
+                self:sendBossClearReward(self.bosses.BLUE_BABY)
             end
             return
             -- phase 2 is Variant 10 and ending phase 1 counts as killing Variant 0 sometimes => requries special handling
@@ -415,20 +420,20 @@ function AP:init()
     }
 
     self.bosses = {
-      MOM = 0,
-      MOMS_HEART = 1,
-      ISAAC = 3,
-      SATAN = 4,
-      BLUE_BABY = 6,
-      LAMB = 7,
-      MEGA_SATAN = 8,
-      BOSS_RUSH = 9,
-      HUSH = 10,
-      DOGMA = 11,
-      BEAST = 12,
-      MOTHER = 13,
-      DELIRIUM = 14,
-      ULTRA_GREED = -1
+        MOM = 0,
+        MOMS_HEART = 1,
+        ISAAC = 3,
+        SATAN = 4,
+        BLUE_BABY = 6,
+        LAMB = 7,
+        MEGA_SATAN = 8,
+        BOSS_RUSH = 9,
+        HUSH = 10,
+        DOGMA = 11,
+        BEAST = 12,
+        MOTHER = 13,
+        DELIRIUM = 14,
+        ULTRA_GREED = -1
     }
 
     self.killed_bosses = {}
@@ -461,7 +466,7 @@ function AP:init()
         [self.bosses.ULTRA_GREED] = self.NOTE_TYPES.CENT_SIGN,
         [self.bosses.DELIRIUM] = self.NOTE_TYPES.WRINKLED_PAPER
     }
-    
+
     self.LAMB_KILL = false
     self.LAMB_BODY_KILL = false
     -- double pickup fix related
@@ -542,24 +547,24 @@ function AP:sendBossClearReward(boss)
     if self.killed_bosses[boss] then -- certain bosses "die" multiple times. This is stopped by keeping track of them in a list.
         return
     end
-    
+
     self.killed_bosses[boss] = true
 
     local goal = tonumber(self.SLOT_DATA.goal)
     -- dbg_log("AP:sendBossClearReward"..tostring(goal))
     if goal == 16 or goal == 17 then
         if self.bossToNoteType[boss] ~= nil then
-          -- dbg_log("AP:sendBossClearReward noteinfo "..tostring(self.bossToNoteType[boss]))
-          self:setPersistentNoteInfo(self.bossToNoteType[boss], Isaac.GetPlayer():GetPlayerType(), self:isHardMode())
+            -- dbg_log("AP:sendBossClearReward noteinfo "..tostring(self.bossToNoteType[boss]))
+            self:setPersistentNoteInfo(self.bossToNoteType[boss], Isaac.GetPlayer():GetPlayerType(), self:isHardMode())
         end
     else
-      if boss == goal then -- The boss enum has been set up in such a way that the values of bosses match up with their goals
-          self:attemptSendGoalReached()
-      elseif goal == 2 and (boss == self.bosses.ISAAC or boss == self.bosses.SATAN) then
-          self:attemptSendGoalReached()
-      elseif goal == 5 and (boss == self.bosses.BLUE_BABY or boss == self.bosses.LAMB) then
-          self:attemptSendGoalReached()
-      end
+        if boss == goal then -- The boss enum has been set up in such a way that the values of bosses match up with their goals
+            self:attemptSendGoalReached()
+        elseif goal == 2 and (boss == self.bosses.ISAAC or boss == self.bosses.SATAN) then
+            self:attemptSendGoalReached()
+        elseif goal == 5 and (boss == self.bosses.BLUE_BABY or boss == self.bosses.LAMB) then
+            self:attemptSendGoalReached()
+        end
     end
 
     if self.bossRewardAmounts[boss] ~= nil and self.SLOT_DATA.additionalBossRewards then

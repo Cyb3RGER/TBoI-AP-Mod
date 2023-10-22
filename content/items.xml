@@ -1,5 +1,5 @@
 <items gfxroot="gfx/items/" version="1">
-    <passive id="69" name="AP Item" description="AP Check" gfx="color_icon.png" hidden="true" tags="noeden nocantrip quest"/>
-    <passive id="71" name="AP Item (10 coins)" description="AP Check but cheaper" gfx="color_icon.png" hidden="true" tags="noeden nocantrip quest" shopprice="10"/>
+    <passive id="69" name="AP Item" description="AP Check" devilprice="2" gfx="color_icon.png" hidden="true" tags="noeden nocantrip quest"/>
+    <passive id="71" name="AP Item (10 coins/1 heart)" description="AP Check but cheaper" devilprice="1" shopprice="10" gfx="color_icon.png" hidden="true" tags="noeden nocantrip quest"/>
     <passive id="70" name="AP Trap (Paralysis)" description="Paralysis" gfx="color_icon.png" hidden="true" tags="noeden nocantrip quest"/>
 </items>
