@@ -196,11 +196,15 @@ end
 
 -- AP item impl helpers
 function AP:spawnCollectible(item, forceItem)
-    local player = Game():GetNearestPlayer(Isaac.GetRandomPosition())
+    local playerNum = Game():GetNumPlayers()
+    local randomIndex = self.RNG:RandomInt(playerNum)
+    -- dbg_log("AP:spawnCollectible "..tostring(randomIndex).." ".. tostring(playerNum))
+    local player = Game():GetPlayer(randomIndex)
     -- Found Soul fix
     while player.Variant == 1 and player.SubType == 59 do
         -- dbg_log("AP:spawnCollectible rerolling player from "..tostring(player:GetName()))
-        player = Game():GetNearestPlayer(Isaac.GetRandomPosition())
+        randomIndex = self.RNG:RandomInt(playerNum)
+        player = Game():GetPlayer(randomIndex)
     end
     -- dbg_log("AP:spawnCollectible "..tostring(player:GetName()))
     local item_config = Isaac:GetItemConfig():GetCollectible(item)
