@@ -163,7 +163,7 @@ function AP:init()
                 -- self:clearLocations(1)                
                 self.CUR_ITEM_STEP_VAL = 0
                 local itemConfig = Isaac.GetItemConfig():GetCollectible(pickup.SubType)
-                if (itemConfig.ShopPrice == 10 or itemConfig.DevilPrice == 1 or not itemConfig.DevilPrice) then
+                if (pickup:IsShopItem() and (itemConfig.ShopPrice == 10 or (pickup.Price < 1 and itemConfig.DevilPrice == 1 or not itemConfig.DevilPrice))) then
                     -- print("onPrePickupCollision", "cheap", self.AP_ITEM_ID_CHEAP)
                     pickup:Morph(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, self.AP_ITEM_ID_CHEAP,
                         true, true, true)
@@ -518,6 +518,7 @@ function AP:collectItem(item)
 end
 function AP:clearLocations(amount)
     amount = amount or 1
+    dbg_log(string.format("clearLocations %s %s %s %s",amount,#self.AP_CLIENT.missing_locations,dump_table(self.AP_CLIENT.missing_locations),dump_table(self.AP_CLIENT.checked_locations)))
     if amount > #self.AP_CLIENT.missing_locations then
         amount = #self.AP_CLIENT.missing_locations
     end
