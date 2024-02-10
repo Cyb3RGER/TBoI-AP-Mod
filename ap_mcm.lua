@@ -197,23 +197,22 @@ function AP:initMCM()
     ModConfigMenu.AddSetting(self.MOD_NAME, AP.CONN_SETTINGS_HEADER, {
         Type = ModConfigMenu.OptionType.TEXT,
         CurrentSetting = function()
-            return self.HOST_ADDRESS
+            return nil
         end,
         Display = function()
-            return "AP Host Address: " .. (self.HOST_ADDRESS or "")
+            return "How to change"
         end,
         OnChange = function(v)
-
         end,
-        Info = {"This the IP address of the AP Host Server"}
+        Info = {"ENTER = quit & save, ESC = quit,$newline$newlineSHIFT = toggle case"}
     })
     ModConfigMenu.AddSetting(self.MOD_NAME, AP.CONN_SETTINGS_HEADER, {
         Type = ModConfigMenu.OptionType.BOOLEAN,
         CurrentSetting = function()
-            return nil
+            return self.HOST_ADDRESS
         end,
         Display = function()
-            local text = "Change AP Host Address"
+            local text = "AP Host Address: " .. (self.HOST_ADDRESS or "")
             if self.UNLOCK_TYPING and self.TYPING_TARGET == "HOST_ADDRESS" then
                 text = "Typing: " .. self.CURRENT_TYPING_STRING
             end
@@ -229,28 +228,15 @@ function AP:initMCM()
             self.WAIT_TYPING_ENTER_EXIT = 30
             self.UNLOCK_TYPING = true
         end,
-        Info = {"ENTER = quit & save, ESC = quit,$newline$newlineSHIFT = toggle case"}
-    })
-    ModConfigMenu.AddSetting(self.MOD_NAME, AP.CONN_SETTINGS_HEADER, {
-        Type = ModConfigMenu.OptionType.TEXT,
-        CurrentSetting = function()
-            return self.HOST_PORT
-        end,
-        Display = function()
-            return "AP Host Port: " .. (self.HOST_PORT or "")
-        end,
-        OnChange = function(v)
-
-        end,
-        Info = {"This the port of the AP Host Server"}
+        Info = {"This the IP address of the AP Host Server"}
     })
     ModConfigMenu.AddSetting(self.MOD_NAME, AP.CONN_SETTINGS_HEADER, {
         Type = ModConfigMenu.OptionType.BOOLEAN,
         CurrentSetting = function()
-            return nil
+            return self.HOST_PORT
         end,
         Display = function()
-            local text = "Change AP Host Port"
+            local text = "AP Host Port: " .. (self.HOST_PORT or "")
             if self.UNLOCK_TYPING and self.TYPING_TARGET == "HOST_PORT" then
                 text = "Typing: " .. self.CURRENT_TYPING_STRING
             end
@@ -266,28 +252,15 @@ function AP:initMCM()
             self.WAIT_TYPING_ENTER_EXIT = 30
             self.UNLOCK_TYPING = true
         end,
-        Info = {"ENTER = quit & save, ESC = quit,$newline$newlineSHIFT = toggle case"}
-    })
+        Info = {"This the port of the AP Host Server"}
+    })    
     ModConfigMenu.AddSetting(self.MOD_NAME, AP.CONN_SETTINGS_HEADER, {
-        Type = ModConfigMenu.OptionType.TEXT,
+        Type = ModConfigMenu.OptionType.BOOLEAN,
         CurrentSetting = function()
             return self.SLOT_NAME
         end,
         Display = function()
-            return "AP Slot Name: " .. (self.SLOT_NAME or "")
-        end,
-        OnChange = function(v)
-
-        end,
-        Info = {"This is the slot name of the slot you want to connect to in the AP Room"}
-    })
-    ModConfigMenu.AddSetting(self.MOD_NAME, AP.CONN_SETTINGS_HEADER, {
-        Type = ModConfigMenu.OptionType.BOOLEAN,
-        CurrentSetting = function()
-            return nil
-        end,
-        Display = function()
-            local text = "Change AP Slot Name"
+            local text = "AP Slot Name: " .. (self.SLOT_NAME or "")
             if self.UNLOCK_TYPING and self.TYPING_TARGET == "SLOT_NAME" then
                 text = "Typing: " .. self.CURRENT_TYPING_STRING
             end
@@ -303,39 +276,26 @@ function AP:initMCM()
             self.WAIT_TYPING_ENTER_EXIT = 30
             self.UNLOCK_TYPING = true
         end,
-        Info = {"ENTER = quit & save, ESC = quit,$newline$newlineSHIFT = toggle case"}
+        Info = {"This is the slot name of the slot you want to connect to in the AP Room"}
     })
     ModConfigMenu.AddSetting(self.MOD_NAME, AP.CONN_SETTINGS_HEADER, {
-        Type = ModConfigMenu.OptionType.TEXT,
+        Type = ModConfigMenu.OptionType.BOOLEAN,
         CurrentSetting = function()
             return self.PASSWORD
         end,
         Display = function()
             local displayVal = "none"
-            if self.PASSWORD then
+            if self.PASSWORD and self.PASSWORD ~= "" then
                 displayVal = ""
                 for i = 1, #self.PASSWORD do
                     displayVal = displayVal .. "*"
                 end
             end
-            return "AP Password: " .. displayVal
-        end,
-        OnChange = function(v)
-
-        end,
-        Info = {"This the password of the AP Room. This is optional."}
-    })
-    ModConfigMenu.AddSetting(self.MOD_NAME, AP.CONN_SETTINGS_HEADER, {
-        Type = ModConfigMenu.OptionType.BOOLEAN,
-        CurrentSetting = function()
-            return nil
-        end,
-        Display = function()
-            local text = "Change AP Password"
+            displayVal = "AP Password: " .. displayVal
             if self.UNLOCK_TYPING and self.TYPING_TARGET == "PASSWORD" then
-                text = "Typing: " .. self.CURRENT_TYPING_STRING
+                displayVal = "Typing: " .. self.CURRENT_TYPING_STRING
             end
-            return text
+            return displayVal
         end,
         OnChange = function(v)
             if self.WAIT_TYPING_ENTER_EXIT > 0 then
@@ -347,11 +307,11 @@ function AP:initMCM()
             self.WAIT_TYPING_ENTER_EXIT = 30
             self.UNLOCK_TYPING = true
         end,
-        Info = {"ENTER = quit & save, ESC = quit,$newline$newlineSHIFT = toggle case"}
+        Info = {"This the password of the AP Room. This is optional."}
     })
     function self.onInputAction()
         self:trackTypingInput()
-    end    
+    end
     function self.onPostRender()
         if self.WAIT_TYPING_ENTER_EXIT > 0 then
             self.WAIT_TYPING_ENTER_EXIT = self.WAIT_TYPING_ENTER_EXIT - 1
