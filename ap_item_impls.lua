@@ -1,161 +1,163 @@
+AP.BASE_ID = 7880000
+
 AP.ITEM_IMPLS = {
-    [78000] = function(ap)
+    [AP.BASE_ID + 000] = function(ap)
         ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_TREASURE)
     end,
-    [78001] = function(ap)
+    [AP.BASE_ID + 001] = function(ap)
         ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_SHOP)
     end,
-    [78002] = function(ap)
+    [AP.BASE_ID + 002] = function(ap)
         ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_BOSS)
     end,
-    [78003] = function(ap)
+    [AP.BASE_ID + 003] = function(ap)
         ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_DEVIL)
     end,
-    [78004] = function(ap)
+    [AP.BASE_ID + 004] = function(ap)
         ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_ANGEL)
     end,
-    [78005] = function(ap)
+    [AP.BASE_ID + 005] = function(ap)
         ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_SECRET)
     end,
-    [78006] = function(ap)
+    [AP.BASE_ID + 006] = function(ap)
         ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_LIBRARY)
     end,
-    [78007] = function(ap)
+    [AP.BASE_ID + 007] = function(ap)
         ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_CURSE)
     end,
-    [78008] = function(ap)
+    [AP.BASE_ID + 008] = function(ap)
         ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_PLANETARIUM)
     end,
-    [78009] = function(ap)
+    [AP.BASE_ID + 009] = function(ap)
         ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_SHELL_GAME)
     end,
-    [78010] = function(ap)
+    [AP.BASE_ID + 010] = function(ap)
         ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_GOLDEN_CHEST)
     end,
-    [78011] = function(ap)
+    [AP.BASE_ID + 011] = function(ap)
         ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_RED_CHEST)
     end,
-    [78012] = function(ap)
+    [AP.BASE_ID + 012] = function(ap)
         ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_BEGGAR)
     end,
-    [78013] = function(ap)
+    [AP.BASE_ID + 013] = function(ap)
         ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_DEMON_BEGGAR)
     end,
-    [78014] = function(ap)
+    [AP.BASE_ID + 014] = function(ap)
         ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_KEY_MASTER)
     end,
-    [78015] = function(ap)
+    [AP.BASE_ID + 015] = function(ap)
         ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_BATTERY_BUM)
     end,
-    [78016] = function(ap)
+    [AP.BASE_ID + 016] = function(ap)
         ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_MOMS_CHEST)
     end,
-    [78017] = function(ap)
+    [AP.BASE_ID + 017] = function(ap)
         ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_GREED_TREASURE)
     end,
-    [78018] = function(ap)
+    [AP.BASE_ID + 018] = function(ap)
         ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_GREED_BOSS)
     end,
-    [78019] = function(ap)
+    [AP.BASE_ID + 019] = function(ap)
         ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_GREED_SHOP)
     end,
-    [78020] = function(ap)
+    [AP.BASE_ID + 020] = function(ap)
         ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_GREED_DEVIL)
     end,
-    [78021] = function(ap)
+    [AP.BASE_ID + 021] = function(ap)
         ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_GREED_ANGEL)
     end,
-    [78022] = function(ap)
+    [AP.BASE_ID + 022] = function(ap)
         ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_GREED_CURSE)
     end,
-    [78023] = function(ap)
+    [AP.BASE_ID + 023] = function(ap)
         ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_GREED_SECRET)
     end,
-    [78024] = function(ap)
+    [AP.BASE_ID + 024] = function(ap)
         ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_CRANE_GAME)
     end,
-    [78025] = function(ap)
+    [AP.BASE_ID + 025] = function(ap)
         ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_ULTRA_SECRET)
     end,
-    [78026] = function(ap)
+    [AP.BASE_ID + 026] = function(ap)
         ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_BOMB_BUM)
     end,
-    [78027] = function(ap)
+    [AP.BASE_ID + 027] = function(ap)
         ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_OLD_CHEST)
     end,
-    [78028] = function(ap)
+    [AP.BASE_ID + 028] = function(ap)
         ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_BABY_SHOP)
     end,
-    [78029] = function(ap)
+    [AP.BASE_ID + 029] = function(ap)
         ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_WOODEN_CHEST)
     end,
-    [78030] = function(ap)
+    [AP.BASE_ID + 030] = function(ap)
         ap:spawnRandomCollectibleFromPool(ItemPoolType.POOL_ROTTEN_BEGGAR)
     end,
-    [78031] = function(ap)
+    [AP.BASE_ID + 031] = function(ap)
         ap:spawnRandomPickup()
     end,
-    [78032] = function(ap)
+    [AP.BASE_ID + 032] = function(ap)
         ap:spawnRandomPickupByType(PickupVariant.PICKUP_HEART)
     end,
-    [78033] = function(ap)
+    [AP.BASE_ID + 033] = function(ap)
         ap:spawnRandomPickupByType(PickupVariant.PICKUP_COIN)
     end,
-    [78034] = function(ap)
+    [AP.BASE_ID + 034] = function(ap)
         ap:spawnRandomPickupByType(PickupVariant.PICKUP_BOMB)
     end,
-    [78035] = function(ap)
+    [AP.BASE_ID + 035] = function(ap)
         ap:spawnRandomPickupByType(PickupVariant.PICKUP_KEY)
     end,
-    [78036] = function(ap)
+    [AP.BASE_ID + 036] = function(ap)
         ap:spawnRandomPickupByType(PickupVariant.PICKUP_TAROTCARD)
     end,
-    [78037] = function(ap)
+    [AP.BASE_ID + 037] = function(ap)
         ap:spawnRandomPickupByType(PickupVariant.PICKUP_PILL)
     end,
-    [78038] = function(ap)
+    [AP.BASE_ID + 038] = function(ap)
         ap:spawnRandomChest()
     end,
-    [78039] = function(ap)
+    [AP.BASE_ID + 039] = function(ap)
         ap:spawnRandomPickupByType(PickupVariant.PICKUP_TRINKET)
     end,
-    -- 78040 - 78771 are generated by AP:generateCollectableItemImpls
-    [78772] = function(ap)
-        ap:addToTrapQueue(78772)
+    -- AP.BASE_ID + 040 - AP.BASE_ID + 771 are generated by AP:generateCollectableItemImpls
+    [AP.BASE_ID + 772] = function(ap)
+        ap:addToTrapQueue(AP.BASE_ID + 772)
     end,
-    [78773] = function(ap)
-        ap:addToTrapQueue(78773, 120)
+    [AP.BASE_ID + 773] = function(ap)
+        ap:addToTrapQueue(AP.BASE_ID + 773, 120)
     end,
-    [78774] = function(ap)
-        ap:addToTrapQueue(78774)
+    [AP.BASE_ID + 774] = function(ap)
+        ap:addToTrapQueue(AP.BASE_ID + 774)
     end,
-    [78775] = function(ap)
-        ap:addToTrapQueue(78775)
+    [AP.BASE_ID + 775] = function(ap)
+        ap:addToTrapQueue(AP.BASE_ID + 775)
     end,
-    [78776] = function(ap)
-        ap:addToTrapQueue(78776, 120)
+    [AP.BASE_ID + 776] = function(ap)
+        ap:addToTrapQueue(AP.BASE_ID + 776, 120)
     end,
-    [78777] = function(ap)
-        ap:addToTrapQueue(78777)
+    [AP.BASE_ID + 777] = function(ap)
+        ap:addToTrapQueue(AP.BASE_ID + 777)
     end
 }
 AP.TRAP_IMPLS = {
-    [78772] = function(ap)
+    [AP.BASE_ID + 772] = function(ap)
         for i = 0, 5 do
             ap:addToSpawnQueue(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_BOMB, BombSubType.BOMB_TROLL, 5)
         end
     end,
-    [78773] = function(ap)
+    [AP.BASE_ID + 773] = function(ap)
         local level = Game():GetLevel()
         if (level:GetCurrentRoomDesc().Flags & RoomDescriptor.FLAG_CURSED_MIST) ~= RoomDescriptor.FLAG_CURSED_MIST then
             Game():StartRoomTransition(level:GetRandomRoomIndex(ap.SLOT_DATA.teleportTrapCanError, ap.RNG:Next()), -1,
                 RoomTransitionAnim.TELEPORT)
         end
     end,
-    [78774] = function(ap)
+    [AP.BASE_ID + 774] = function(ap)
         Game():AddPixelation(300)
     end,
-    [78775] = function(ap)
+    [AP.BASE_ID + 775] = function(ap)
         local level = Game():GetLevel()
         local currentCurses = level:GetCurses()
         local curses = {LevelCurse.CURSE_OF_DARKNESS, LevelCurse.CURSE_OF_THE_LOST, LevelCurse.CURSE_OF_THE_UNKNOWN,
@@ -170,17 +172,17 @@ AP.TRAP_IMPLS = {
                 return
             end
         end
-        ap:addToTrapQueue(78775)
+        ap:addToTrapQueue(AP.BASE_ID + 775)
     end,
-    [78776] = function(ap)
+    [AP.BASE_ID + 776] = function(ap)
         local player = Game():GetNearestPlayer(Isaac.GetRandomPosition())
         if player:HasCollectible(ap.AP_ITEM_TRAP_PARALISYS) then
-            ap:addToTrapQueue(78776, 120)
+            ap:addToTrapQueue(AP.BASE_ID + 776, 120)
         else
             player:AddCollectible(ap.AP_ITEM_TRAP_PARALISYS)
         end
     end,
-    [78777] = function(ap)
+    [AP.BASE_ID + 777] = function(ap)
         local player = Game():GetNearestPlayer(Isaac.GetRandomPosition())
         player:UseActiveItem(CollectibleType.COLLECTIBLE_WAVY_CAP)
     end

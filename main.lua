@@ -16,7 +16,7 @@ require('ap_data_storage')
 function AP:init()
     AP.INSTANCE = self
     dbg_log("called AP:init 1")
-    self:generateCollectableItemImpls(78040)
+    self:generateCollectableItemImpls(AP.BASE_ID + 040)
     self.RNG = RNG()
     self.RNG:SetSeed(Random(), 35)
     self.DEBUG_MODE = false
