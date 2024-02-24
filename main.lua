@@ -243,8 +243,6 @@ function AP:init()
                         tostring(self.LAMB_KILL))
         end
         print('called entityKill', 3, "is goal boss", type, entity.Variant)
-        local playerType = Isaac.GetPlayer():GetPlayerType()
-        local isHardMode = self:isHardMode()
         -- blue baby uses a SubType of Isaac => requries special handling
         if type == EntityType.ENTITY_ISAAC then
             if entity.Variant == 0 then

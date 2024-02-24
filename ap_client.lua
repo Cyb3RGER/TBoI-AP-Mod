@@ -1,3 +1,4 @@
+---@type APClient
 local APClient = package.loadlib(script_path() .. 'lua-apclientpp.dll', 'luaopen_apclientpp')()
 local json = require('json')
 
@@ -347,12 +348,12 @@ function AP:resolveIdToName(typeStr, id)
         if type(id) == "string" then
             id = tonumber(id)
         end
-        return self.AP_CLIENT:get_location_name(id)
+        return self.AP_CLIENT:get_location_name(id, AP.GAME_NAME)
     elseif string.find(typeStr, "item") then
         if type(id) == "string" then
             id = tonumber(id)
         end
-        return self.AP_CLIENT:get_item_name(id)
+        return self.AP_CLIENT:get_item_name(id, AP.GAME_NAME)
     elseif string.find(typeStr, "player") then
         if type(id) == "string" then
             id = tonumber(id)
@@ -382,7 +383,7 @@ function AP:sendDeathLinkBounce(cause, source)
     dbg_log("AP:sendDeathLinkBounce " .. tostring(res))
 end
 function AP:collectSlot()
-    if self.AP_CLIENT:get_state() ~= APClient.State["SLOT_CONNECTED"] then
+    if self.AP_CLIENT:get_state() ~= APClient.State.SLOT_CONNECTED then
         self:addMessage({
             parts = {{
                 msg = "You can not collect when you are not connected",
@@ -394,7 +395,7 @@ function AP:collectSlot()
     self.AP_CLIENT:Say("!collect")
 end
 function AP:releaseSlot()
-    if self.AP_CLIENT:get_state() ~= APClient.State["SLOT_CONNECTED"] then
+    if self.AP_CLIENT:get_state() ~= APClient.State.SLOT_CONNECTED then
         self:addMessage({
             parts = {{
                 msg = "You can not release! (not connected or no permission)",
@@ -423,6 +424,7 @@ function AP:connectAP()
     self.LAST_RECEIVED_ITEM_INDEX = -1
     local uuid = ""
     print("AP:connect_ap", uuid, AP.GAME_NAME, self.HOST_ADDRESS .. ":" .. self.HOST_PORT)
+    ---@type APClient
     self.AP_CLIENT = APClient(uuid, AP.GAME_NAME, self.HOST_ADDRESS .. ":" .. self.HOST_PORT)
 
     self.AP_CLIENT:set_socket_connected_handler(self.on_socket_connected)

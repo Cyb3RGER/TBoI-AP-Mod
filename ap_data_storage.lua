@@ -20,7 +20,7 @@ function AP:setPersistentNoteInfo(note_type, player_type, isHardMode)
     end
     local noteMarkRequireHardMode = self.SLOT_DATA.noteMarkRequireHardMode
     -- print("AP:setPersistentNoteInfo", 2, noteMarkRequireHardMode)
-    if noteMarkRequireHardMode and not isHardMode then
+    if noteMarkRequireHardMode == 1 and not isHardMode then
         return
     end
     local char = -1
