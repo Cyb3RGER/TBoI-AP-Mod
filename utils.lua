@@ -1,4 +1,7 @@
---IS_WINDOWS = package.config:sub(1, 1) == "\\" or package.config:sub(1, 1) == "\\\\"
+DIR_SEP = package.config:sub(1,1)
+IS_WINDOWS = DIR_SEP == '\\'
+IS_REPENTOGON = _VERSION ~= "Lua 5.3"
+
 COLORS = {
     RED = {
         R = 255,
@@ -283,7 +286,7 @@ function debugPlayers()
          players[i]:GetName(), players[i]:GetMainTwin().Index, players[i]:GetOtherTwin(), players[i]:GetSubPlayer(),
          players[i]:IsCoopGhost(), players[i]:IsSubPlayer(), players[i]:GetEntityFlags(), players[i].Child, players[i].Parent)
         if players[i].Parent then
-            print(players[i].Parent.Index)    
+            print(players[i].Parent.Index)
         end
         print("-------------------------------------------------")
     end

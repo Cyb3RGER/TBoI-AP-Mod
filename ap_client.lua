@@ -1,5 +1,12 @@
+
+
+local lua_dir = 'lua533r'
+if IS_REPENTOGON then
+    lua_dir = 'lua54'
+end
+local luaapclient_dir = script_path() .. 'lib' .. DIR_SEP .. lua_dir .. DIR_SEP .. 'lua-apclientpp.dll'
 ---@type APClient
-local APClient = package.loadlib(script_path() .. 'lua-apclientpp.dll', 'luaopen_apclientpp')()
+local APClient = package.loadlib(luaapclient_dir, 'luaopen_apclientpp')()
 local json = require('json')
 
 -- AP client / Mod version
