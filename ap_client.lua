@@ -1,8 +1,8 @@
 
 
-local lua_dir = 'lua533r'
+local lua_dir = 'lua533r-clang32-dynamic'
 if IS_REPENTOGON then
-    lua_dir = 'lua54'
+    lua_dir = 'lua54-clang32-static'
 end
 local luaapclient_dir = script_path() .. 'lib' .. DIR_SEP .. lua_dir .. DIR_SEP .. 'lua-apclientpp.dll'
 ---@type APClient
