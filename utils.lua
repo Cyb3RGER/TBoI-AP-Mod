@@ -90,7 +90,7 @@ function checkPos(pos, player)
     return true
 end
 
-function getCollectableIndex(collectable)    
+function getCollectableIndex(collectable)
     local level = Game():GetLevel()
     local room = Game():GetRoom()
     local roomDescriptor = level:GetCurrentRoomDesc()

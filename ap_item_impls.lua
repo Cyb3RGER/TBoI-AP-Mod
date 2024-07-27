@@ -139,7 +139,74 @@ AP.ITEM_IMPLS = {
     end,
     [AP.BASE_ID + 777] = function(ap)
         ap:addToTrapQueue(AP.BASE_ID + 777)
-    end
+    end,
+    [AP.BASE_ID + 778] = function(ap)
+        ap:unlockProgressiveStage()
+    end,
+    [AP.BASE_ID + 779] = function(ap)
+        ap:unlockProgressiveAltStage()
+    end,
+    [AP.BASE_ID + 780] = function(ap)
+        ap:unlockStage(LevelStage.STAGE1_1)
+    end,
+    [AP.BASE_ID + 781] = function(ap)
+        ap:unlockStage(LevelStage.STAGE1_2)
+    end,
+    [AP.BASE_ID + 782] = function(ap)
+        ap:unlockStage(LevelStage.STAGE2_1)
+    end,
+    [AP.BASE_ID + 783] = function(ap)
+        ap:unlockStage(LevelStage.STAGE2_2)
+    end,
+    [AP.BASE_ID + 784] = function(ap)
+        ap:unlockStage(LevelStage.STAGE3_1)
+    end,
+    [AP.BASE_ID + 785] = function(ap)
+        ap:unlockStage(LevelStage.STAGE3_2)
+    end,
+    [AP.BASE_ID + 786] = function(ap)
+        ap:unlockStage(LevelStage.STAGE4_1)
+    end,
+    [AP.BASE_ID + 787] = function(ap)
+        ap:unlockStage(LevelStage.STAGE4_2)
+    end,
+    [AP.BASE_ID + 788] = function(ap)
+        ap:unlockStage(LevelStage.STAGE4_3)
+        ap:unlockStage(LevelStage.STAGE5)
+    end,
+    [AP.BASE_ID + 789] = function(ap)
+        ap:unlockStage(LevelStage.STAGE6)
+    end,
+    [AP.BASE_ID + 790] = function(ap)
+        ap:unlockStage(LevelStage.STAGE7)
+    end,
+    [AP.BASE_ID + 791] = function(ap)
+        ap:unlockStage(LevelStage.STAGE8)
+    end,
+    [AP.BASE_ID + 792] = function(ap)
+        ap:unlockAltStage(AP.ALT_STAGES.DOWNPOUR_1)
+    end,
+    [AP.BASE_ID + 793] = function(ap)
+        ap:unlockAltStage(AP.ALT_STAGES.DOWNPOUR_2)
+    end,
+    [AP.BASE_ID + 794] = function(ap)
+        ap:unlockAltStage(AP.ALT_STAGES.MINES_1)
+    end,
+    [AP.BASE_ID + 795] = function(ap)
+        ap:unlockAltStage(AP.ALT_STAGES.MINES_2)
+    end,
+    [AP.BASE_ID + 796] = function(ap)
+        ap:unlockAltStage(AP.ALT_STAGES.MAUSOLEUM_1)
+    end,
+    [AP.BASE_ID + 797] = function(ap)
+        ap:unlockAltStage(AP.ALT_STAGES.MAUSOLEUM_2)
+    end,
+    [AP.BASE_ID + 798] = function(ap)
+        ap:unlockAltStage(AP.ALT_STAGES.CORPSE_1)
+    end,
+    [AP.BASE_ID + 799] = function(ap)
+        ap:unlockAltStage(AP.ALT_STAGES.CORPSE_2)
+    end,
 }
 AP.TRAP_IMPLS = {
     [AP.BASE_ID + 772] = function(ap)
@@ -187,6 +254,30 @@ AP.TRAP_IMPLS = {
         player:UseActiveItem(CollectibleType.COLLECTIBLE_WAVY_CAP)
     end
 }
+
+function AP:unlockProgressiveStage()
+    local len = #self.UNLOCKED_STAGES + 1
+    table.insert(self.UNLOCKED_STAGES, len)
+    if len == LevelStage.STAGE4_2 then
+        table.insert(self.UNLOCKED_STAGES, len + 1)
+    end
+end
+
+function AP:unlockProgressiveAltStage()
+    local len = #self.UNLOCKED_ALT_STAGES + 1
+    table.insert(self.UNLOCKED_ALT_STAGES, len)
+end
+function AP:unlockStage(stage)
+    if not tbl_contains(self.UNLOCKED_STAGES, stage) then
+        table.insert(self.UNLOCKED_STAGES, stage)
+    end
+end
+function AP:unlockAltStage(stage)
+    if not tbl_contains(self.UNLOCKED_ALT_STAGES, stage) then
+        table.insert(self.UNLOCKED_ALT_STAGES, stage)
+    end
+end
+
 
 function AP:generateCollectableItemImpls(startIdx)
     for i = 0, CollectibleType.NUM_COLLECTIBLES - 2 do

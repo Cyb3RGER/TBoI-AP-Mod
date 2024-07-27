@@ -375,7 +375,9 @@ function AP:resolveIdToName(typeStr, id, slot)
 end
 
 function AP:sendLocationsCleared(ids)
+    dbg_log('AP:sendLocationsCleared '..dump_table(ids))
     self.AP_CLIENT:LocationChecks(ids)
+    dbg_log('AP:sendLocationsCleared after')
 end
 
 function AP:sendDeathLinkBounce(cause, source)

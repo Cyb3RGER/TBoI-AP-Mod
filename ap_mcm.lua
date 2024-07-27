@@ -357,7 +357,7 @@ function AP:trackTypingInput()
             if self.PRESSED_BUTTONS[i] then
                 for j = 32, 400 do
                     if self.PRESSED_BUTTONS[i][j] and self.PRESSED_BUTTONS[i][j] > 0 then
-                        print("self.trackTypingInput",2,self.PRESSED_BUTTONS[i][j],self.PREV_PRESSED_BUTTONS[i][j])                                       
+                        --print("self.trackTypingInput",2,self.PRESSED_BUTTONS[i][j],self.PREV_PRESSED_BUTTONS[i][j])
                     end
                     if self.PRESSED_BUTTONS[i][j] and self.PRESSED_BUTTONS[i][j] > 0 and
                         not (self.PREV_PRESSED_BUTTONS and self.PREV_PRESSED_BUTTONS[i] and self.PREV_PRESSED_BUTTONS[i][j] and

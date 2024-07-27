@@ -5,6 +5,137 @@ AP = class()
 
 AP.INSTANCE = nil
 AP.MOD_NAME = "AP Integration"
+AP.ALT_STAGES = {
+    DOWNPOUR_1 = 1,
+    DOWNPOUR_2 = 2,
+    MINES_1 = 3,
+    MINES_2 = 4,
+    MAUSOLEUM_1 = 5,
+    MAUSOLEUM_2 = 6,
+    CORPSE_1 = 7,
+    CORPSE_2 = 8
+}
+AP.STAGE_NAMES = {
+    Basement1 = "Basement I",
+    Basement2 = "Basement II",
+    Caves1 = "Caves I",
+    Caves2 = "Caves II",
+    Depths1 = "Depths I",
+    Depths2 = "Depths II",
+    Womb1 = "Womb I",
+    Womb2 = "Womb II",
+    BlueWomb = "Blue Womb",
+    Sheol = "Sheol",
+    Cathedral = "Cathedral",
+    DarkRoom = "Dark Room",
+    Chest = "Chest",
+    TheVoid = "The Void",
+    Home = "Home",
+    Downpour1 = "Downpour I",
+    Downpour2 = "Downpour II",
+    Mines1 = "Mines I",
+    Mines2 = "Mines II",
+    Mausoleum1 = "Mausoleum I",
+    Mausoleum2 = "Mausoleum II",
+    Corpse1 = "Corpse I",
+    Corpse2 = "Corpse II",
+}
+AP.STAGE_MAPPING = {
+    [1] = AP.STAGE_NAMES.Basement1,
+    [2] = AP.STAGE_NAMES.Basement2,
+    [3] = AP.STAGE_NAMES.Caves1,
+    [4] = AP.STAGE_NAMES.Caves2,
+    [5] = AP.STAGE_NAMES.Depths1,
+    [6] = AP.STAGE_NAMES.Depths2,
+    [7] = AP.STAGE_NAMES.Womb1,
+    [8] = AP.STAGE_NAMES.Womb2,
+    [9] = AP.STAGE_NAMES.BlueWomb,
+    [10] = AP.STAGE_NAMES.Sheol,
+    [11] = AP.STAGE_NAMES.Cathedral,
+    [12] = AP.STAGE_NAMES.DarkRoom,
+    [13] = AP.STAGE_NAMES.Chest,
+    [14] = AP.STAGE_NAMES.TheVoid,
+    [15] = AP.STAGE_NAMES.Home,
+    [16] = AP.STAGE_NAMES.Downpour1,
+    [17] = AP.STAGE_NAMES.Downpour2,
+    [18] = AP.STAGE_NAMES.Mines1,
+    [19] = AP.STAGE_NAMES.Mines2,
+    [20] = AP.STAGE_NAMES.Mausoleum1,
+    [21] = AP.STAGE_NAMES.Mausoleum2,
+    [22] = AP.STAGE_NAMES.Corpse1,
+    [23] = AP.STAGE_NAMES.Corpse2,
+}
+AP.ROOM_TYPES_NAMES = {
+    Shop = "Shop",
+    Treasure = "Treasure Room",
+    Boss = "Boss Room",
+    Secret = "Secret Room",
+    Devil = "Devil Deal",
+    Angel = "Angel Deal",
+    Planetarium = "Planetarium",
+    Other = "Other",
+}
+AP.ROOM_TYPES_IDS = {
+    [AP.ROOM_TYPES_NAMES.Shop] = 0,
+    [AP.ROOM_TYPES_NAMES.Treasure] = 1,
+    [AP.ROOM_TYPES_NAMES.Boss] = 2,
+    [AP.ROOM_TYPES_NAMES.Secret] = 3,
+    [AP.ROOM_TYPES_NAMES.Devil] = 4,
+    [AP.ROOM_TYPES_NAMES.Angel] = 5,
+    [AP.ROOM_TYPES_NAMES.Planetarium] = 6,
+    [AP.ROOM_TYPES_NAMES.Other] = 7,
+}
+AP.ROOM_TYPE_MAPPING = {
+    [RoomType.ROOM_NULL] = AP.ROOM_TYPES_NAMES.Other,
+    [RoomType.ROOM_DEFAULT] = AP.ROOM_TYPES_NAMES.Other,
+    [RoomType.ROOM_SHOP] = AP.ROOM_TYPES_NAMES.Shop,
+    [RoomType.ROOM_ERROR] = AP.ROOM_TYPES_NAMES.Other,
+    [RoomType.ROOM_TREASURE] = AP.ROOM_TYPES_NAMES.Treasure,
+    [RoomType.ROOM_BOSS] = AP.ROOM_TYPES_NAMES.Boss,
+    [RoomType.ROOM_MINIBOSS] = AP.ROOM_TYPES_NAMES.Boss,
+    [RoomType.ROOM_SECRET] = AP.ROOM_TYPES_NAMES.Secret,
+    [RoomType.ROOM_SUPERSECRET] = AP.ROOM_TYPES_NAMES.Secret,
+    [RoomType.ROOM_ARCADE] = AP.ROOM_TYPES_NAMES.Other,
+    [RoomType.ROOM_CURSE] = AP.ROOM_TYPES_NAMES.Other,
+    [RoomType.ROOM_CHALLENGE] = AP.ROOM_TYPES_NAMES.Other,
+    [RoomType.ROOM_LIBRARY] = AP.ROOM_TYPES_NAMES.Other,
+    [RoomType.ROOM_SACRIFICE] = AP.ROOM_TYPES_NAMES.Other,
+    [RoomType.ROOM_DEVIL] = AP.ROOM_TYPES_NAMES.Devil,
+    [RoomType.ROOM_ANGEL] = AP.ROOM_TYPES_NAMES.Angel,
+    [RoomType.ROOM_DUNGEON] = AP.ROOM_TYPES_NAMES.Secret,
+    [RoomType.ROOM_BOSSRUSH] = AP.ROOM_TYPES_NAMES.Boss,
+    [RoomType.ROOM_ISAACS] = AP.ROOM_TYPES_NAMES.Other,
+    [RoomType.ROOM_BARREN] = AP.ROOM_TYPES_NAMES.Other,
+    [RoomType.ROOM_CHEST] = AP.ROOM_TYPES_NAMES.Treasure,
+    [RoomType.ROOM_DICE] = AP.ROOM_TYPES_NAMES.Other,
+    [RoomType.ROOM_BLACK_MARKET] = AP.ROOM_TYPES_NAMES.Secret,
+    [RoomType.ROOM_GREED_EXIT] = AP.ROOM_TYPES_NAMES.Other,
+    [RoomType.ROOM_PLANETARIUM] = AP.ROOM_TYPES_NAMES.Planetarium,
+    [RoomType.ROOM_TELEPORTER] = AP.ROOM_TYPES_NAMES.Other,
+    [RoomType.ROOM_TELEPORTER_EXIT] = AP.ROOM_TYPES_NAMES.Other,
+    [RoomType.ROOM_SECRET_EXIT] = AP.ROOM_TYPES_NAMES.Other,
+    [RoomType.ROOM_BLUE] = AP.ROOM_TYPES_NAMES.Other,
+    [RoomType.ROOM_ULTRASECRET] = AP.ROOM_TYPES_NAMES.Secret,
+}
+AP.DISALLOWED_ROOM_TYPES_PER_STAGE = {
+    -- do not expect the player to get deals or planetarium on first floor... unless we make them guaranteed somehow at
+    -- some point
+    [AP.STAGE_NAMES.Basement1] =  {AP.ROOM_TYPES_NAMES.Devil, AP.ROOM_TYPES_NAMES.Angel, AP.ROOM_TYPES_NAMES.Planetarium},
+    -- no shops/treasure rooms/planetariums after this point
+    [AP.STAGE_NAMES.Womb1] =  {AP.ROOM_TYPES_NAMES.Shop, AP.ROOM_TYPES_NAMES.Treasure, AP.ROOM_TYPES_NAMES.Planetarium},
+    [AP.STAGE_NAMES.Womb2] =  {AP.ROOM_TYPES_NAMES.Shop, AP.ROOM_TYPES_NAMES.Treasure, AP.ROOM_TYPES_NAMES.Planetarium},
+    [AP.STAGE_NAMES.Corpse1] =  {AP.ROOM_TYPES_NAMES.Shop, AP.ROOM_TYPES_NAMES.Treasure, AP.ROOM_TYPES_NAMES.Planetarium},
+    [AP.STAGE_NAMES.Corpse2] =  {AP.ROOM_TYPES_NAMES.Shop, AP.ROOM_TYPES_NAMES.Treasure, AP.ROOM_TYPES_NAMES.Planetarium},
+    -- no deals after this point
+    -- exception Blue Womb:  only Shops, Treasure Rooms and Other
+    [AP.STAGE_NAMES.BlueWomb] =  {AP.ROOM_TYPES_NAMES.Boss, AP.ROOM_TYPES_NAMES.Planetarium, AP.ROOM_TYPES_NAMES.Secret, AP.ROOM_TYPES_NAMES.Devil, AP.ROOM_TYPES_NAMES.Angel},
+    [AP.STAGE_NAMES.Sheol] =  {AP.ROOM_TYPES_NAMES.Shop, AP.ROOM_TYPES_NAMES.Treasure, AP.ROOM_TYPES_NAMES.Planetarium, AP.ROOM_TYPES_NAMES.Devil, AP.ROOM_TYPES_NAMES.Angel},
+    [AP.STAGE_NAMES.Cathedral] =  {AP.ROOM_TYPES_NAMES.Shop, AP.ROOM_TYPES_NAMES.Treasure, AP.ROOM_TYPES_NAMES.Planetarium, AP.ROOM_TYPES_NAMES.Devil, AP.ROOM_TYPES_NAMES.Angel},
+    [AP.STAGE_NAMES.DarkRoom] =  {AP.ROOM_TYPES_NAMES.Shop, AP.ROOM_TYPES_NAMES.Treasure, AP.ROOM_TYPES_NAMES.Planetarium, AP.ROOM_TYPES_NAMES.Devil, AP.ROOM_TYPES_NAMES.Angel},
+    [AP.STAGE_NAMES.Chest] =  {AP.ROOM_TYPES_NAMES.Shop, AP.ROOM_TYPES_NAMES.Treasure, AP.ROOM_TYPES_NAMES.Planetarium, AP.ROOM_TYPES_NAMES.Devil, AP.ROOM_TYPES_NAMES.Angel},
+    [AP.STAGE_NAMES.TheVoid] =  {AP.ROOM_TYPES_NAMES.Shop, AP.ROOM_TYPES_NAMES.Treasure, AP.ROOM_TYPES_NAMES.Planetarium, AP.ROOM_TYPES_NAMES.Devil, AP.ROOM_TYPES_NAMES.Angel},
+    [AP.STAGE_NAMES.Home] =  {AP.ROOM_TYPES_NAMES.Shop, AP.ROOM_TYPES_NAMES.Treasure, AP.ROOM_TYPES_NAMES.Planetarium, AP.ROOM_TYPES_NAMES.Devil, AP.ROOM_TYPES_NAMES.Angel},
+}
 
 require('ap_messages')
 require('ap_mcm')
@@ -52,6 +183,15 @@ function AP:init()
             player:UsePill(PillEffect.PILLEFFECT_PARALYSIS, PillColor.PILL_NULL)
         end
     }
+    -- Uses LevelStage enum
+    self.UNLOCKED_STAGES = {
+        LevelStage.STAGE1_1
+    }
+    -- Uses AP.ALT_STAGES enum
+    self.UNLOCKED_ALT_STAGES = {
+    }
+    self.ShouldEndGame = false
+    self.GameEndTimer = -1
     self:initMCM()
     self:loadConnectionInfo()
     self:loadSettings()
@@ -68,12 +208,16 @@ function AP:init()
         self.TRAP_QUEUE_TIMER = 150
         self.RECEIVED_QUEUE = {}
         self.killed_bosses = {}
+        self.UNLOCKED_STAGES = { LevelStage.STAGE1_1 }
+        self.UNLOCKED_ALT_STAGES = {}
+        self.ShouldEndGame = false
+        self.GameEndTimer = -1
         if self.SHOULD_AUTO_CONNECT then
             self:connectAP()
         end
     end
     function self.onPostRender(mod)
-        -- dbg_log("onPostRender")`
+        -- dbg_log("onPostRender")
         if self.AP_CLIENT then
             self.AP_CLIENT:poll()
         end
@@ -87,6 +231,17 @@ function AP:init()
         self:advanceItemQueue()
         self:advanceTrapQueue()
         self:advanceSpawnQueue()
+
+        if self.ShouldEndGame then
+            print(self.ShouldEndGame, self.GameEndTimer)
+            if self.GameEndTimer > 0 then
+                self.GameEndTimer = self.GameEndTimer - 1
+            elseif self.GameEndTimer == 0 then
+                Game():End(1)
+                self.ShouldEndGame = false
+                self.GameEndTimer = -1
+            end
+        end
     end
     function self.onPreGameExit(mod, shouldSave)
         if self.AP_CLIENT and self.AP_CLIENT:get_state() == 4 then
@@ -107,7 +262,7 @@ function AP:init()
     function self.onPrePickupCollision(mod, pickup, collider, low)
         local totalLocations = self.SLOT_DATA.totalLocations
         local checkedLocations = #self.AP_CLIENT.checked_locations
-        local collectableIndex = getCollectableIndex(pickup)
+        --local collectableIndex = getCollectableIndex(pickup)
         if pickup.Variant ~= PickupVariant.PICKUP_COLLECTIBLE or collider.Type ~= EntityType.ENTITY_PLAYER or
             checkedLocations >= totalLocations or (pickup.Touched and pickup.SubType ~= self.AP_ITEM_ID) -- used to not make AP spawned item collectable until rerolled
         or pickup.SubType == CollectibleType.COLLECTIBLE_NULL -- might get called when bumping in a already collected collectable
@@ -116,6 +271,7 @@ function AP:init()
         end
         local itemConfig = Isaac.GetItemConfig():GetCollectible(pickup.SubType)
         -- check for special items like polaroid/negative, key/knife pieces or dad's note
+        -- ToDo: skip this when we put quest item in itempool
         if itemConfig:HasTags(ItemConfig.TAG_QUEST) then
             return
         end
@@ -159,8 +315,7 @@ function AP:init()
             self.CUR_ITEM_STEP_VAL = self.CUR_ITEM_STEP_VAL + 1
             dbg_log(string.format('onPrePickupCollision: item is potential AP item %s %s %s %s %s', item_step,
                 self.CUR_ITEM_STEP_VAL, #self.AP_CLIENT.missing_locations, pickup.SubType, pickup.State))
-            if self.CUR_ITEM_STEP_VAL == item_step then
-                -- self:clearLocations(1)                
+            if self.CUR_ITEM_STEP_VAL == item_step then                
                 self.CUR_ITEM_STEP_VAL = 0
                 local itemConfig = Isaac.GetItemConfig():GetCollectible(pickup.SubType)
                 if (pickup:IsShopItem() and (itemConfig.ShopPrice == 10 or (pickup.Price < 1 and itemConfig.DevilPrice == 1 or not itemConfig.DevilPrice))) then
@@ -266,7 +421,7 @@ function AP:init()
             return
             -- Dogma uses Variant == 2 for the 2nd phase
         elseif type == EntityType.ENTITY_DOGMA then
-            if goal == 11 and entity.Variant == 2 then
+            if entity.Variant == 2 then
                 self:sendBossClearReward(self.bosses.DOGMA)
             end
             return
@@ -299,6 +454,9 @@ function AP:init()
         end
     end
     function self.onPostNewLevel()
+        if self.ShouldEndGame then
+            self.GameEndTimer = 100
+        end
         local stage = self:getStageNum()
         if self.FURTHEST_FLOOR < stage then
             self.FURTHEST_FLOOR = stage
@@ -309,6 +467,23 @@ function AP:init()
             self.ITEM_QUEUE_CURRENT_MAX = stage * self.ITEM_QUEUE_MAX_PER_FLOOR
         end
     end
+    function self.onPreLevelSelect(mod, stage, type)
+        if not self.AP_CLIENT then
+            return
+        end
+        if StageTransition.GetSameStage() or self.AP_CLIENT:get_state() ~= 4 then
+            return
+        end
+        if self.SLOT_DATA.stageUnlocks == 0 then
+            return
+        end
+        local level = Game():GetLevel()
+        if not self:canReachStage(stage, type) then
+            self.ShouldEndGame = true
+            StageTransition.SetSameStage(true)
+            return { level:GetStage(), level:GetStageType() }
+        end
+    end
     self.MOD_REF:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, self.onPostGameStarted)
     self.MOD_REF:AddCallback(ModCallbacks.MC_POST_RENDER, self.onPostRender)
     self.MOD_REF:AddCallback(ModCallbacks.MC_PRE_GAME_EXIT, self.onPreGameExit)
@@ -317,6 +492,7 @@ function AP:init()
     self.MOD_REF:AddCallback(ModCallbacks.MC_POST_ENTITY_KILL, self.onPostEntityKill)
     self.MOD_REF:AddCallback(ModCallbacks.MC_PRE_SPAWN_CLEAN_AWARD, self.onPreSpawnClearAward)
     self.MOD_REF:AddCallback(ModCallbacks.MC_POST_NEW_LEVEL, self.onPostNewLevel)
+    self.MOD_REF:AddCallback(ModCallbacks.MC_PRE_LEVEL_SELECT, self.onPreLevelSelect)
     print("called AP:init", 3)
     -- global Isaac info
     self.IS_CONTINUED = false
@@ -496,6 +672,37 @@ function AP:init()
     print("called AP:init", 4, "end")
 end
 
+function AP:getNextStage(stage)
+    local next_stage = stage + 1
+    if stage == LevelStage.STAGE4_2 then
+        next_stage = stage + 2
+    end
+    return next_stage
+end
+
+function AP:canReachStage(stage, type)
+    if self.SLOT_DATA.stageUnlocks == 0 then
+        return true
+    end
+    if self.SLOT_DATA.includeAltStageUnlocks == 1 and
+        type == StageType.STAGETYPE_REPENTANCE or type == StageType.STAGETYPE_REPENTANCE_B then
+        if (stage == LevelStage.STAGE1_1 and not tbl_contains(self.UNLOCKED_ALT_STAGES, self.ALT_STAGES.DOWNPOUR_1)) or
+            (stage == LevelStage.STAGE1_2 and not tbl_contains(self.UNLOCKED_ALT_STAGES, self.ALT_STAGES.DOWNPOUR_2)) or
+            (stage == LevelStage.STAGE2_1 and not tbl_contains(self.UNLOCKED_ALT_STAGES, self.ALT_STAGES.MINES_1)) or
+            (stage == LevelStage.STAGE2_2 and not tbl_contains(self.UNLOCKED_ALT_STAGES, self.ALT_STAGES.MINES_2)) or
+            (stage == LevelStage.STAGE3_1 and not tbl_contains(self.UNLOCKED_ALT_STAGES, self.ALT_STAGES.MAUSOLEUM_1)) or
+            (stage == LevelStage.STAGE3_2 and not tbl_contains(self.UNLOCKED_ALT_STAGES, self.ALT_STAGES.MAUSOLEUM_2)) or
+            (stage == LevelStage.STAGE4_1 and not tbl_contains(self.UNLOCKED_ALT_STAGES, self.ALT_STAGES.CORPSE_1)) or
+            (stage == LevelStage.STAGE4_2 and not tbl_contains(self.UNLOCKED_ALT_STAGES, self.ALT_STAGES.CORPSE_2)) then
+            return false
+        end
+    end
+    if not tbl_contains(self.UNLOCKED_STAGES, stage) then
+        return false
+    end
+    return true
+end
+
 -- AP util funcs
 function AP:collectItem(item)
     local id = item.item
@@ -503,7 +710,8 @@ function AP:collectItem(item)
     if roomDesc.Name == "Beast Room" then -- dont receive items in the beast room
         return
     end
-    if self.JUST_STARTED and self.SLOT_DATA.splitStartItems and self.SLOT_DATA.splitStartItems > 0 then
+    if id < AP.BASE_ID + 778 and id > AP.BASE_ID + 798 and self.JUST_STARTED
+        and self.SLOT_DATA.splitStartItems and self.SLOT_DATA.splitStartItems > 0 then
         self:addToItemQueue(id)
         return
     end
@@ -516,20 +724,105 @@ function AP:collectItem(item)
 end
 function AP:clearLocations(amount)
     amount = amount or 1
-    dbg_log(string.format("clearLocations %s %s %s %s",amount,#self.AP_CLIENT.missing_locations,dump_table(self.AP_CLIENT.missing_locations),dump_table(self.AP_CLIENT.checked_locations)))
-    if amount > #self.AP_CLIENT.missing_locations then
-        amount = #self.AP_CLIENT.missing_locations
-    end
     local ids = {}
-    table.move(self.AP_CLIENT.missing_locations, 1, amount, 1, ids)
-    dbg_log("clearLocations" .. dump_table(ids) .. " " .. tostring(amount) .. " " ..
-                tostring(#self.AP_CLIENT.missing_locations))
-    self:sendLocationsCleared(ids)
+    local level = Game():GetLevel()
+    local loc_amount = 0
+    local loc_prefix = ""
+    dbg_log(string.format("%s: locationsByStage: %s, locationsByRoomType: %s", "AP:clearLocations", self.SLOT_DATA.locationsByStage, self.SLOT_DATA.locationsByRoomType))
+    --dbg_log(string.format("clearLocations %s %s %s %s",amount,#self.AP_CLIENT.missing_locations,dump_table(self.AP_CLIENT.missing_locations),dump_table(self.AP_CLIENT.checked_locations)))
+    if self.SLOT_DATA.locationsByStage == 0 and self.SLOT_DATA.locationsByRoomType == 0 then
+        if amount > #self.AP_CLIENT.missing_locations then
+            amount = #self.AP_CLIENT.missing_locations
+        end
+        table.move(self.AP_CLIENT.missing_locations, 1, amount, 1, ids)
+        --dbg_log("clearLocations" .. dump_table(ids) .. " " .. tostring(amount) .. " " ..tostring(#self.AP_CLIENT.missing_locations))        
+    elseif self.SLOT_DATA.locationsByStage == 1 then
+        local stage_id = self:getAPStageId(level)
+        local stage_name = AP.STAGE_MAPPING[stage_id]
+        if self.SLOT_DATA.locationsByRoomType == 1 then
+            -- locationsByStage and locationsByRoomType
+            local _, room_type_name = self:getAPRoomTypeIdAndName(level)
+            loc_amount = self.SLOT_DATA.locationCounts[stage_name][room_type_name]
+            loc_prefix = string.format("%s %s", stage_name, room_type_name)
+        else
+            -- only locationsByStage
+            loc_amount = self.SLOT_DATA.locationCounts[stage_name]
+            loc_prefix = stage_name
+        end
+    elseif self.SLOT_DATA.locationsByRoomType == 1 then
+        -- only locationsByRoomType
+        local _, room_type_name = self:getAPRoomTypeIdAndName(level)
+        local stage_name = AP.STAGE_NAMES.Basement1
+        if tbl_contains(self.DISALLOWED_ROOM_TYPES_PER_STAGE[AP.STAGE_NAMES.Basement1], room_type_name) then
+            stage_name = AP.STAGE_NAMES.Basement2
+        end
+        loc_amount = self.SLOT_DATA.locationCounts[stage_name][room_type_name]
+        loc_prefix = room_type_name
+    end
+    loc_amount = loc_amount or 0
+    dbg_log(string.format("%s: amount: %s, loc_amount: %s", "AP:clearLocations", amount, loc_amount))
+    for i = 1, loc_amount do
+        local loc_name = string.format("%s Item %s", loc_prefix, i)
+        local loc_id = self.AP_CLIENT:get_location_id(loc_name)
+        dbg_log(string.format("%s: checking %s (%s)", "AP:clearLocations", loc_name, loc_id))
+        if tbl_contains(self.AP_CLIENT.missing_locations, loc_id) then
+            dbg_log(string.format("%s: adding loc id %s to be cleared", "AP:clearLocations", loc_id))
+            table.insert(ids, loc_id)
+            amount = amount - 1
+            if amount <= 0 then
+                break
+            end
+        end
+    end
+    if #ids > 0 then
+        self:sendLocationsCleared(ids)
+    end
+end
+
+function AP:getAPRoomTypeIdAndName(level)
+    local room = level:GetCurrentRoom()
+    local room_type = room:GetType()
+    local name = AP.ROOM_TYPE_MAPPING[room_type]
+    if not name then
+        return nil, nil
+    end
+    local id = AP.ROOM_TYPES_IDS[name]
+    return id, name
+end
+
+function AP:getAPStageId(level)
+    local stage = level:GetStage()
+    local stage_type = level:GetStageType()
+    if stage <= LevelStage.STAGE4_3 then
+        if self.SLOT_DATA.includeAltStageLocations == 1 and stage <= LevelStage.STAGE4_2 and
+            stage_type == StageType.STAGETYPE_REPENTANCE or stage_type == StageType.STAGETYPE_REPENTANCE_B then
+            return stage + 15
+        end
+        return stage
+    end
+    if stage == LevelStage.Stage5 then
+        local name = level:GetName()
+        if name == "Sheol" then
+            return stage
+        else
+            return stage + 1
+        end
+    end
+    if stage == LevelStage.Stage6 then
+        local name = level:GetName()
+        if name == "Dark Room" then
+            return stage + 1
+        else
+            return stage + 2
+        end
+    end
+    return stage + 2
 end
 
 function AP:attemptSendGoalReached()
     local goal = tonumber(self.SLOT_DATA.goal)
-    if #self.AP_CLIENT.checked_locations >= tonumber(self.SLOT_DATA.requiredLocations) then
+    --ToDo: rework when requiredLocations are required and when reaching the goal stage is good enough
+    if goal < 15 or #self.AP_CLIENT.checked_locations >= tonumber(self.SLOT_DATA.requiredLocations) then
         self:sendGoalReached()
     elseif goal == 16 or goal == 17 then
         self:addMessage({
