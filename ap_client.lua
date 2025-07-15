@@ -10,7 +10,7 @@ local APClient = package.loadlib(luaapclient_dir, 'luaopen_apclientpp')()
 local json = require('json')
 
 -- AP client / Mod version
-AP.VERSION = { 0, 3, 0 }
+AP.VERSION = { 0, 5, 0 }
 AP.GAME_NAME = "The Binding of Isaac Repentance"
 AP.ITEM_HANDLING = 7 -- fully remote
 AP.TAGS = { "Lua-APClientPP" }
